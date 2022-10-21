@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pygame Shapes!</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Pygame Shapes!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 18 - 27</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+
+pygame.init()
+clock = pygame.time.Clock()
+
+windowWidth = 640
+windowHeight = 480
+
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+
+pygame.display.set_caption(&#x27;Pygame Shapes!&#x27;)
+
+squareX = 0
+squareY = 0
+
+#Code Block 2 Variables
+greenSquareX = windowWidth / 2
+greenSquareY = windowHeight / 2
+
+#Code Block 3 Variables
+blueSquareX = 0.0
+blueSquareY = 0.0
+blueSquareVX = 1
+blueSquareVY = 1
+
+while True:
+
+	surface.fill((0,0,0))
+
+	# Code block 1 - Drawing Shapes in Time and Space
+	pygame.draw.rect(surface, (255,0,0), (random.randint(0, windowWidth), random.randint(0, windowHeight), 10, 10 ) )
+
+	#Code Block 2 - Moving Shapes Across Space in Time
+	&#x27;&#x27;&#x27;
+	pygame.draw.rect(surface, (0, 255, 0), (greenSquareX, greenSquareY, 10, 10))
+
+	greenSquareX += 1
+	#greenSquareY += 1
+	&#x27;&#x27;&#x27;
+	#Code block 3 - Moving Shapes with Acceleration
+	&#x27;&#x27;&#x27;
+	pygame.draw.rect(surface, (0, 0, 255), (blueSquareX, blueSquareY, 10, 10))
+
+	blueSquareX += blueSquareVX
+	blueSquareY += blueSquareVY
+
+	blueSquareVX -= 0.2
+	blueSquareVY += 0.1
+	&#x27;&#x27;&#x27;
+
+	for event in GAME_EVENTS.get():
+
+		if event.type == GAME_GLOBALS.QUIT:
+
+			pygame.quit()
+
+			sys.exit()
+
+	clock.tick(60)
+	pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 640;
+HEIGHT = 480;
+TITLE = 'Pygame Shapes!';
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+var squareX, squareY, greenSquareX, greenSquareY, blueSquareX, blueSquareY, blueSquareVX, blueSquareVY;
+
+function reset() {
+  squareX = 0;
+  squareY = 0;
+
+  //Code Block 2 Variables
+  greenSquareX = WIDTH / 2;
+  greenSquareY = HEIGHT / 2;
+
+  //Code Block 3 Variables
+  blueSquareX = 0.0;
+  blueSquareY = 0.0;
+  blueSquareVX = 1;
+  blueSquareVY = 1;
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+
+  // Code block 1 - Drawing Shapes in Time and Space
+  screen.draw.filled_rect(new Rect(getRandomInteger(0, WIDTH + 1), getRandomInteger(0, HEIGHT + 1), 10, 10), [255, 0, 0]);
+
+  //Code Block 2 - Moving Shapes Across Space in Time
+  /*
+  screen.draw.filled_rect(new Rect(greenSquareX, greenSquareY, 10, 10), [0, 255, 0]);
+  */
+
+  //Code block 3 - Moving Shapes with Acceleration
+  /*
+  screen.draw.filled_rect(new Rect(blueSquareX, blueSquareY, 10, 10), [0, 0, 255]);
+  */
+}
+
+function update() {
+  //Code Block 2 - Moving Shapes Across Space in Time
+  /*
+  greenSquareX += 1;
+  //greenSquareY += 1;
+  */
+
+  //Code block 3 - Moving Shapes with Acceleration
+  /*
+  blueSquareX += blueSquareVX;
+  blueSquareY += blueSquareVY;
+
+  blueSquareVX -= 0.2;
+  blueSquareVY += 0.1;
+  */
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
