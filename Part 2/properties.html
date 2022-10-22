@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pygame Shapes!</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Pygame Shapes!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 18 - 27</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+
+pygame.init()
+clock = pygame.time.Clock()
+
+windowWidth = 640
+windowHeight = 480
+
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+
+pygame.display.set_caption(&#x27;Pygame Shapes!&#x27;)
+
+# Code block 1 variables
+
+rectX = windowWidth / 2
+rectY = windowHeight / 2
+rectWidth = 50
+rectHeight = 50
+
+# Code block 2 variables
+
+squaresRed = random.randint(0, 255)
+squaresBlue = random.randint(0, 255)
+squaresGreen = random.randint(0, 255)
+
+while True:
+
+	surface.fill((0,0,0))
+
+	# Code block 1
+
+	pygame.draw.rect(surface, (255,255,0), (rectX - rectWidth / 2, rectY - rectHeight / 2, rectWidth, rectHeight))
+
+	rectWidth -= 1
+	rectHeight -= 1
+
+	#Code block 2
+	&#x27;&#x27;&#x27;
+	pygame.draw.rect(surface, (squaresRed, squaresGreen, squaresBlue), (50, 50, windowWidth / 2, windowHeight / 2))
+
+	if squaresRed &gt;= 255:
+		squaresRed = random.randint(0, 255)
+	else:
+		squaresRed += 1
+
+	if squaresGreen &gt;= 255:
+		squaresGreen = random.randint(0, 255)
+	else:
+		squaresGreen += 1
+
+	if squaresBlue &gt;= 255:
+		squaresBlue = random.randint(0, 255)
+	else:
+		squaresBlue += 1
+	&#x27;&#x27;&#x27;
+
+	for event in GAME_EVENTS.get():
+
+		if event.type == GAME_GLOBALS.QUIT:
+
+			pygame.quit()
+
+			sys.exit()
+
+	clock.tick(60)
+	pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 640;
+HEIGHT = 480;
+TITLE = 'Pygame Shapes!';
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+var rectX, rectY, rectWidth, rectHeight, squaresRed, squaresBlue, squaresGreen;
+
+function reset() {
+  // Code block 1 variables
+
+  rectX = WIDTH / 2;
+  rectY = HEIGHT / 2;
+  rectWidth = 50;
+  rectHeight = 50;
+
+  // Code block 2 variables
+
+  squaresRed = getRandomInteger(0, 256);
+  squaresBlue = getRandomInteger(0, 256);
+  squaresGreen = getRandomInteger(0, 256);
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+
+  // Code block 1
+
+  screen.draw.filled_rect(new Rect(rectX - (rectWidth / 2), rectY - (rectHeight / 2), rectWidth, rectHeight), [255, 255, 0]);
+
+  //Code block 2
+  /*
+  screen.draw.filled_rect(new Rect(50, 50, WIDTH / 2, HEIGHT / 2), [squaresRed, squaresGreen, squaresBlue]);
+  */
+}
+
+function update() {
+  // Code block 1
+
+  rectWidth -= 1;
+  rectHeight -= 1;
+
+  //Code block 2
+  /*
+  if (squaresRed >= 255) {
+    squaresRed = getRandomInteger(0, 256);
+  }
+  else {
+    squaresRed += 1;
+  }
+
+  if (squaresGreen >= 255) {
+    squaresGreen = getRandomInteger(0, 256);
+  }
+  else {
+    squaresGreen += 1;
+  }
+
+  if (squaresBlue >= 255) {
+    squaresBlue = getRandomInteger(0, 256);
+  }
+  else {
+    squaresBlue += 1;
+  }
+  */
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
