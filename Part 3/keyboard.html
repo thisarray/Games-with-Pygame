@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pygame Keyboard!</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Pygame Keyboard!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 28 - 41</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+
+# Pygame Variables
+pygame.init()
+clock = pygame.time.Clock()
+
+windowWidth = 800
+windowHeight = 800
+
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+pygame.display.set_caption(&#x27;Pygame Keyboard!&#x27;)
+
+# Square Variables
+playerSize = 20
+playerX = (windowWidth / 2) - (playerSize / 2)
+playerY = windowHeight - playerSize
+playerVX = 1.0
+playerVY = 0.0
+jumpHeight = 25.0
+moveSpeed = 1.0
+maxSpeed = 10.0
+gravity = 1.0
+
+# Keyboard Variables
+leftDown = False
+rightDown = False
+haveJumped = False
+
+def move():
+
+	global playerX, playerY, playerVX, playerVY, haveJumped, gravity
+
+	# Move left
+	if leftDown:
+		#If we&#x27;re already moving to the right, reset the moving speed and invert the direction
+		if playerVX &gt; 0.0:
+			playerVX = moveSpeed
+			playerVX = -playerVX
+		# Make sure our square doesn&#x27;t leave our window to the left
+		if playerX &gt; 0:
+			playerX += playerVX
+
+	# Move right
+	if rightDown:
+		# If we&#x27;re already moving to the left reset the moving speed again
+		if playerVX &lt; 0.0:
+			playerVX = moveSpeed
+		# Make sure our square doesn&#x27;t leave our window to the right
+		if playerX + playerSize &lt; windowWidth:
+			playerX += playerVX
+
+	if playerVY &gt; 1.0:
+		playerVY = playerVY * 0.9
+	else :
+		playerVY = 0.0
+		haveJumped = False
+
+	# Is our square in the air? Better add some gravity to bring it back down!
+	if playerY &lt; windowHeight - playerSize:
+		playerY += gravity
+		gravity = gravity * 1.1
+	else :
+		playerY = windowHeight - playerSize
+		gravity = 1.0
+
+	playerY -= playerVY
+
+	if playerVX &gt; 0.0 and playerVX &lt; maxSpeed or playerVX &lt; 0.0 and playerVX &gt; -maxSpeed:
+		if haveJumped == False:
+			playerVX = playerVX * 1.1
+
+# How to quit our program
+def quitGame():
+	pygame.quit()
+	sys.exit()
+
+while True:
+
+	surface.fill((0,0,0))
+
+	pygame.draw.rect(surface, (255,0,0), (playerX, playerY, playerSize, playerSize))
+
+	# Get a list of all events that happened since the last redraw
+	for event in GAME_EVENTS.get():
+
+		if event.type == pygame.KEYDOWN:
+
+			if event.key == pygame.K_LEFT:
+				leftDown = True
+			if event.key == pygame.K_RIGHT:
+				rightDown = True
+			if event.key == pygame.K_UP:
+				if not haveJumped:
+					haveJumped = True
+					playerVY += jumpHeight
+			if event.key == pygame.K_ESCAPE:
+				quitGame()
+
+		if event.type == pygame.KEYUP:
+			if event.key == pygame.K_LEFT:
+				leftDown = False
+				playerVX = moveSpeed
+			if event.key == pygame.K_RIGHT:
+				rightDown = False
+				playerVX = moveSpeed
+
+		if event.type == GAME_GLOBALS.QUIT:
+			quitGame()
+
+	move()
+
+	clock.tick(60)
+	pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 800;
+HEIGHT = 800;
+TITLE = 'Pygame Keyboard!';
+
+const PLAYER_SIZE = 20;
+const JUMP_HEIGHT = 25.0;
+const MOVE_SPEED = 1.0;
+const MAX_SPEED = 10.0;
+
+var playerX, playerY, playerVX, playerVY, gravity, leftDown, rightDown, haveJumped;
+
+function reset() {
+  // Square Variables
+  playerX = (WIDTH / 2) - (PLAYER_SIZE / 2);
+  playerY = HEIGHT - PLAYER_SIZE;
+  playerVX = 1.0;
+  playerVY = 0.0;
+  gravity = 1.0;
+
+  // Keyboard Variables
+  leftDown = false;
+  rightDown = false;
+  haveJumped = false;
+}
+
+function move() {
+  // Move left
+  if (leftDown) {
+    //If we're already moving to the right, reset the moving speed and invert the direction
+    if (playerVX > 0.0) {
+      playerVX = MOVE_SPEED;
+      playerVX = -playerVX;
+    }
+    // Make sure our square doesn't leave our window to the left
+    if (playerX > 0) {
+      playerX += playerVX;
+    }
+  }
+
+  // Move right
+  if (rightDown) {
+    // If we're already moving to the left reset the moving speed again
+    if (playerVX < 0.0) {
+      playerVX = MOVE_SPEED;
+    }
+    // Make sure our square doesn't leave our window to the right
+    if ((playerX + PLAYER_SIZE) < WIDTH) {
+      playerX += playerVX;
+    }
+  }
+
+  if (playerVY > 1.0) {
+    playerVY = playerVY * 0.9;
+  }
+  else {
+    playerVY = 0.0;
+    haveJumped = false;
+  }
+
+  // Is our square in the air? Better add some gravity to bring it back down!
+  if (playerY < (HEIGHT - PLAYER_SIZE)) {
+    playerY += gravity;
+    gravity = gravity * 1.1;
+  }
+  else {
+    playerY = HEIGHT - PLAYER_SIZE;
+    gravity = 1.0;
+  }
+
+  playerY -= playerVY;
+
+  if (((playerVX > 0.0) && (playerVX < MAX_SPEED)) || ((playerVX < 0.0) && (playerVX > -MAX_SPEED))) {
+    if (!haveJumped) {
+      playerVX = playerVX * 1.1;
+    }
+  }
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+
+  screen.draw.filled_rect(new Rect(playerX, playerY, PLAYER_SIZE, PLAYER_SIZE), [255, 0, 0]);
+}
+
+function update() {
+  move();
+}
+
+function on_key_down(key) {
+  if (key === keys.LEFT) {
+    leftDown = true;
+  }
+  if (key === keys.RIGHT) {
+    rightDown = true;
+  }
+  if (key === keys.UP) {
+    if (!haveJumped) {
+      haveJumped = true;
+      playerVY += JUMP_HEIGHT;
+    }
+  }
+}
+
+function on_key_up(key) {
+  if (key === keys.LEFT) {
+    leftDown = false;
+    playerVX = MOVE_SPEED;
+  }
+  if (key === keys.RIGHT) {
+    rightDown = false;
+    playerVX = MOVE_SPEED;
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
