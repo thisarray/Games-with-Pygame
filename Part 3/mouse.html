@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pygame Mouse!</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Pygame Mouse!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 28 - 41</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+
+# Pygame Variables
+pygame.init()
+clock = pygame.time.Clock()
+
+windowWidth = 800
+windowHeight = 800
+
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+
+pygame.display.set_caption(&#x27;Pygame Mouse!&#x27;)
+
+# Mouse Variables
+mousePosition = None
+mousePressed = False
+
+# Square Variables
+squareSize = 40
+squareColor = (255, 0, 0)
+squareX = windowWidth / 2
+squareY = windowHeight - squareSize
+draggingSquare = False
+gravity = 5.0
+
+def checkBounds():
+
+	global squareColor, squareX, squareY, draggingSquare
+
+	if mousePressed == True:
+		# Is our cursor over our square?
+		if mousePosition[0] &gt; squareX and mousePosition[0] &lt; squareX + squareSize:
+
+			if mousePosition[1] &gt; squareY and mousePosition[1] &lt; squareY + squareSize:
+
+				draggingSquare = True
+				pygame.mouse.set_visible(0)
+
+	else :
+		squareColor = (255,0,0)
+		pygame.mouse.set_visible(1)
+		draggingSquare = False
+
+def checkGravity():
+
+	global gravity, squareY, squareSize, windowHeight
+
+	# Is our square in the air and have we let go of it?
+	if squareY &lt; windowHeight - squareSize and mousePressed == False:
+		squareY += gravity
+		gravity = gravity * 1.1
+	else :
+		squareY = windowHeight - squareSize
+		gravity = 5.0
+
+def drawSquare():
+
+	global squareColor, squareX, squareY, draggingSquare
+
+	if draggingSquare == True:
+
+		squareColor = (0, 255, 0)
+		squareX = mousePosition[0] - squareSize / 2
+		squareY = mousePosition[1] - squareSize / 2
+
+	pygame.draw.rect(surface, squareColor, (squareX, squareY, squareSize, squareSize))
+
+# How to quit our program
+def quitGame():
+	pygame.quit()
+	sys.exit()
+
+while True:
+
+	mousePosition = pygame.mouse.get_pos()
+
+	surface.fill((0,0,0))
+
+	# Check whether mouse is pressed down
+	if pygame.mouse.get_pressed()[0] == True:
+		mousePressed = True
+	else :
+		mousePressed = False
+
+	checkBounds()
+	checkGravity()
+	drawSquare()
+
+	clock.tick(60)
+	pygame.display.update()
+
+	for event in GAME_EVENTS.get():
+
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_ESCAPE:
+				quitGame()
+
+		if event.type == GAME_GLOBALS.QUIT:
+			quitGame()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 800;
+HEIGHT = 800;
+TITLE = 'Pygame Mouse!';
+
+const SQUARE_SIZE = 40;
+
+var mousePosition, mousePressed, squareColor, squareX, squareY, draggingSquare, gravity;
+
+function reset() {
+  // Mouse Variables
+  mousePosition = null;
+  mousePressed = false;
+
+  // Square Variables
+  squareColor = [255, 0, 0];
+  squareX = WIDTH / 2;
+  squareY = HEIGHT - SQUARE_SIZE;
+  draggingSquare = false;
+  gravity = 5.0;
+}
+
+function checkBounds() {
+  if (mousePressed) {
+    // Is our cursor over our square?
+    if ((mousePosition[0] > squareX) && (mousePosition[0] < (squareX + SQUARE_SIZE))) {
+      if ((mousePosition[1] > squareY) && (mousePosition[1] < (squareY + SQUARE_SIZE))) {
+        draggingSquare = true;
+      }
+    }
+  }
+
+  else {
+    squareColor = [255, 0, 0];
+    draggingSquare = false;
+  }
+}
+
+function checkGravity() {
+  // Is our square in the air and have we let go of it?
+  if ((squareY < (HEIGHT - SQUARE_SIZE)) && (!mousePressed)) {
+    squareY += gravity;
+    gravity = gravity * 1.1;
+  }
+  else {
+    squareY = HEIGHT - SQUARE_SIZE;
+    gravity = 5.0;
+  }
+}
+
+function drawSquare() {
+  if (draggingSquare) {
+    squareColor = [0, 255, 0];
+    squareX = mousePosition[0] - (SQUARE_SIZE / 2);
+    squareY = mousePosition[1] - (SQUARE_SIZE / 2);
+  }
+
+  screen.draw.filled_rect(new Rect(squareX, squareY, SQUARE_SIZE, SQUARE_SIZE), squareColor);
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+  drawSquare();
+}
+
+function update() {
+  checkBounds();
+  checkGravity();
+}
+
+function on_mouse_down(pos) {
+  mousePressed = true;
+}
+
+function on_mouse_up(pos) {
+  mousePressed = false;
+}
+
+function on_mouse_move(pos) {
+  mousePosition = pos;
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
