@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drop!</title>
+  <script src="../../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/game_over.jpg" alt="game_over" data-name="game_over">
+  <img class="hidden" src="images/title.jpg" alt="title" data-name="title">
+</section>
+
+<main>
+<h1>Drop!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 42 - 55</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+pygame.init()
+clock = pygame.time.Clock()
+
+title_image = pygame.image.load(&quot;assets/title.jpg&quot;)
+game_over_image = pygame.image.load(&quot;assets/game_over.jpg&quot;)
+
+windowWidth = 400
+windowHeight = 600
+
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+pygame.display.set_caption(&#x27;Drop!&#x27;)
+
+leftDown = False
+rightDown = False
+
+gameStarted = False
+gameEnded = False
+gamePlatforms = []
+platformSpeed = 3
+platformDelay = 2000
+lastPlatform = 0
+platformsDroppedThrough = -1
+dropping = False
+
+gameBeganAt = 0
+timer = 0
+
+player = {
+  &quot;x&quot; : windowWidth / 2,
+  &quot;y&quot; : 0,
+  &quot;height&quot; : 25,
+  &quot;width&quot; : 10,
+  &quot;vy&quot; : 5
+}
+
+def drawPlayer():
+
+  pygame.draw.rect(surface, (255,0,0), (player[&quot;x&quot;], player[&quot;y&quot;], player[&quot;width&quot;], player[&quot;height&quot;]))
+
+def movePlayer():
+
+  global platformsDroppedThrough, dropping
+
+  leftOfPlayerOnPlatform = True
+  rightOfPlayerOnPlatform = True
+
+  if surface.get_at(( int(player[&quot;x&quot;]), int(player[&quot;y&quot;]) + player[&quot;height&quot;])) == (0,0,0,255):
+    leftOfPlayerOnPlatform = False
+
+  if surface.get_at(( int(player[&quot;x&quot;]) + player[&quot;width&quot;], int(player[&quot;y&quot;]) + player[&quot;height&quot;])) == (0,0,0,255):
+    rightOfPlayerOnPlatform = False
+
+  if leftOfPlayerOnPlatform is False and rightOfPlayerOnPlatform is False and (player[&quot;y&quot;] + player[&quot;height&quot;]) + player[&quot;vy&quot;] &lt; windowHeight:
+    player[&quot;y&quot;] += player[&quot;vy&quot;]
+
+    if dropping is False:
+      dropping = True
+      platformsDroppedThrough += 1
+
+  else :
+
+    foundPlatformTop = False
+    yOffset = 0
+    dropping = False
+
+    while foundPlatformTop is False:
+
+      if surface.get_at(( int(player[&quot;x&quot;]), ( int(player[&quot;y&quot;]) + player[&quot;height&quot;]) - yOffset )) == (0,0,0,255):
+        player[&quot;y&quot;] -= yOffset
+        foundPlatformTop = True
+      elif (player[&quot;y&quot;] + player[&quot;height&quot;]) - yOffset &gt; 0:
+        yOffset += 1
+      else :
+
+        gameOver()
+        break
+
+  if leftDown is True:
+    if player[&quot;x&quot;] &gt; 0 and player[&quot;x&quot;] - 5 &gt; 0:
+      player[&quot;x&quot;] -= 5
+    elif player[&quot;x&quot;] &gt; 0 and player[&quot;x&quot;] - 5 &lt; 0:
+      player[&quot;x&quot;] = 0
+
+  if rightDown is True:
+    if player[&quot;x&quot;] + player[&quot;width&quot;] &lt; windowWidth and (player[&quot;x&quot;] + player[&quot;width&quot;]) + 5 &lt; windowWidth:
+      player[&quot;x&quot;] += 5
+    elif player[&quot;x&quot;] + player[&quot;width&quot;] &lt; windowWidth and (player[&quot;x&quot;] + player[&quot;width&quot;]) + 5 &gt; windowWidth:
+      player[&quot;x&quot;] = windowWidth - player[&quot;width&quot;]
+
+def createPlatform():
+
+  global lastPlatform, platformDelay
+
+  platformY = windowHeight
+  gapPosition = random.randint(0, windowWidth - 40)
+
+  gamePlatforms.append({&quot;pos&quot; : [0, platformY], &quot;gap&quot; : gapPosition})
+  lastPlatform = GAME_TIME.get_ticks()
+
+  if platformDelay &gt; 800:
+    platformDelay -= 50
+
+def movePlatforms():
+  # print(&quot;Platforms&quot;)
+
+  for idx, platform in enumerate(gamePlatforms):
+
+    platform[&quot;pos&quot;][1] -= platformSpeed
+
+    if platform[&quot;pos&quot;][1] &lt; -10:
+      gamePlatforms.pop(idx)
+
+
+def drawPlatforms():
+
+  for platform in gamePlatforms:
+
+    pygame.draw.rect(surface, (255,255,255), (platform[&quot;pos&quot;][0], platform[&quot;pos&quot;][1], windowWidth, 10))
+    pygame.draw.rect(surface, (0,0,0), (platform[&quot;gap&quot;], platform[&quot;pos&quot;][1], 40, 10) )
+
+
+def gameOver():
+  global gameStarted, gameEnded
+
+  platformSpeed = 0
+  gameStarted = False
+  gameEnded = True
+
+def restartGame():
+
+  global gamePlatforms, player, gameBeganAt, platformsDroppedThrough, platformDelay
+
+  gamePlatforms = []
+  player[&quot;x&quot;] = windowWidth / 2
+  player[&quot;y&quot;] = 0
+  gameBeganAt = GAME_TIME.get_ticks()
+  platformsDroppedThrough = -1
+  platformDelay = 2000
+
+def quitGame():
+  pygame.quit()
+  sys.exit()
+
+# &#x27;main&#x27; loop
+while True:
+
+  surface.fill((0,0,0))
+
+  for event in GAME_EVENTS.get():
+
+    if event.type == pygame.KEYDOWN:
+
+      if event.key == pygame.K_LEFT:
+        leftDown = True
+      if event.key == pygame.K_RIGHT:
+        rightDown = True
+      if event.key == pygame.K_ESCAPE:
+        quitGame()
+
+    if event.type == pygame.KEYUP:
+      if event.key == pygame.K_LEFT:
+        leftDown = False
+      if event.key == pygame.K_RIGHT:
+        rightDown = False
+
+      if event.key == pygame.K_SPACE:
+        if gameStarted == False:
+          restartGame()
+          gameStarted = True
+
+    if event.type == GAME_GLOBALS.QUIT:
+      quitGame()
+
+  if gameStarted is True:
+    # Play game
+    timer = GAME_TIME.get_ticks() - gameBeganAt
+
+    movePlatforms()
+    drawPlatforms()
+    movePlayer()
+    drawPlayer()
+
+  elif gameEnded is True:
+    # Draw game over screen
+    surface.blit(game_over_image, (0, 150))
+
+  else :
+    # Welcome Screen
+    surface.blit(title_image, (0, 150))
+
+  if GAME_TIME.get_ticks() - lastPlatform &gt; platformDelay:
+    createPlatform()
+
+  clock.tick(60)
+  pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 400;
+HEIGHT = 600;
+TITLE = 'Drop!';
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+var leftDown, rightDown, gameStarted, gameEnded, gamePlatforms, platformSpeed, platformDelay, lastPlatform, platformsDroppedThrough, dropping, timer, player, surface;
+
+function reset() {
+  leftDown = false;
+  rightDown = false;
+
+  gameStarted = false;
+  gameEnded = false;
+  gamePlatforms = [];
+  platformSpeed = 3;
+  platformDelay = 2;
+  lastPlatform = 0;
+  platformsDroppedThrough = -1;
+  dropping = false;
+
+  timer = 0;
+
+  player = {
+    x: WIDTH / 2,
+    y: 0,
+    height: 25,
+    width: 10,
+    vy: 5
+  }
+
+  screen.fill([0, 0, 0]);
+  surface = screen.getSurface();
+}
+
+function drawPlayer() {
+  screen.draw.filled_rect(new Rect(player["x"], player["y"], player["width"], player["height"]), [255, 0, 0]);
+}
+
+function movePlayer() {
+  let leftOfPlayerOnPlatform = true,
+      rightOfPlayerOnPlatform = true;
+
+  if (Surface.isColorEqual(surface.getAt(Math.trunc(player["x"]), Math.trunc(player["y"]) + player["height"]), [0, 0, 0, 255])) {
+    leftOfPlayerOnPlatform = false;
+  }
+
+  if (Surface.isColorEqual(surface.getAt(Math.trunc(player["x"]) + player["width"], Math.trunc(player["y"]) + player["height"]), [0, 0, 0, 255])) {
+    rightOfPlayerOnPlatform = false;
+  }
+
+  if ((!leftOfPlayerOnPlatform) && (!rightOfPlayerOnPlatform) && ((player["y"] + player["height"] + player["vy"]) < HEIGHT)) {
+    player["y"] += player["vy"];
+
+    if (!dropping) {
+      dropping = true;
+      platformsDroppedThrough += 1;
+    }
+  }
+
+  else {
+
+    let foundPlatformTop = false,
+        yOffset = 0;
+    dropping = false;
+
+    while (!foundPlatformTop) {
+
+      if (Surface.isColorEqual(surface.getAt(Math.trunc(player["x"]), Math.trunc(player["y"]) + player["height"] - yOffset), [0, 0, 0, 255])) {
+        player["y"] -= yOffset;
+        foundPlatformTop = true;
+      }
+      else if ((player["y"] + player["height"] - yOffset) > 0) {
+        yOffset += 1;
+      }
+      else {
+
+        gameOver();
+        break;
+      }
+    }
+  }
+
+  if (leftDown) {
+    if ((player["x"] > 0) && ((player["x"] - 5) > 0)) {
+      player["x"] -= 5;
+    }
+    else if ((player["x"] > 0) && ((player["x"] - 5) < 0)) {
+      player["x"] = 0;
+    }
+  }
+
+  if (rightDown) {
+    if (((player["x"] + player["width"]) < WIDTH) && ((player["x"] + player["width"] + 5) < WIDTH)) {
+      player["x"] += 5;
+    }
+    else if (((player["x"] + player["width"]) < WIDTH) && ((player["x"] + player["width"] + 5) > WIDTH)) {
+      player["x"] = WIDTH - player["width"];
+    }
+  }
+}
+
+function createPlatform() {
+  let platformY = HEIGHT,
+      gapPosition = getRandomInteger(0, WIDTH - 40 + 1);
+
+  gamePlatforms.push({pos: [0, platformY], gap: gapPosition});
+  lastPlatform = 0;
+
+  if (platformDelay > 0.8) {
+    platformDelay -= 0.050;
+  }
+}
+
+function movePlatforms() {
+  // console.log("Platforms");
+
+  let idx = 0;
+  for (let platform of gamePlatforms.slice()) {
+
+    platform["pos"][1] -= platformSpeed;
+
+    if (platform["pos"][1] < -10) {
+      gamePlatforms.splice(idx, 1);
+    }
+    idx++;
+  }
+}
+
+function drawPlatforms() {
+  for (let platform of gamePlatforms) {
+    screen.draw.filled_rect(new Rect(platform["pos"][0], platform["pos"][1], WIDTH, 10), [255, 255, 255]);
+    screen.draw.filled_rect(new Rect(platform["gap"], platform["pos"][1], 40, 10), [0, 0, 0]);
+  }
+}
+
+function gameOver() {
+  platformSpeed = 0;
+  gameStarted = false;
+  gameEnded = true;
+}
+
+function restartGame() {
+  gamePlatforms = [];
+  player["x"] = WIDTH / 2;
+  player["y"] = 0;
+  timer = 0;
+  platformsDroppedThrough = -1;
+  platformDelay = 2;
+
+  screen.fill([0, 0, 0]);
+  surface = screen.getSurface();
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+
+  if (gameStarted) {
+    drawPlatforms();
+    surface = screen.getSurface();
+
+    drawPlayer();
+  }
+
+  else if (gameEnded) {
+    // Draw game over screen
+    screen.blit('game_over', [0, 150]);
+  }
+
+  else {
+    // Welcome Screen
+    screen.blit('title', [0, 150]);
+  }
+}
+
+function update(dt) {
+  if (gameStarted) {
+    // Play game
+    timer += dt;
+    lastPlatform += dt;
+
+    movePlatforms();
+    movePlayer();
+
+    if (lastPlatform > platformDelay) {
+      createPlatform();
+    }
+  }
+}
+
+function on_key_down(key) {
+  if (key === keys.LEFT) {
+    leftDown = true;
+  }
+  if (key === keys.RIGHT) {
+    rightDown = true;
+  }
+}
+
+function on_key_up(key) {
+  if (key === keys.LEFT) {
+    leftDown = false;
+  }
+  if (key === keys.RIGHT) {
+    rightDown = false;
+  }
+  if (key === keys.SPACE) {
+    if (!gameStarted) {
+      restartGame();
+      gameStarted = true;
+    }
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
