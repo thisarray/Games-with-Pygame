@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundboard</title>
+  <script src="../../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/cat.png" alt="cat" data-name="cat">
+  <img class="hidden" src="images/chicken.png" alt="chicken" data-name="chicken">
+  <img class="hidden" src="images/cow.png" alt="cow" data-name="cow">
+  <img class="hidden" src="images/dog.png" alt="dog" data-name="dog">
+  <img class="hidden" src="images/horse.png" alt="horse" data-name="horse">
+  <img class="hidden" src="images/mouse.png" alt="mouse" data-name="mouse">
+  <img class="hidden" src="images/pig.png" alt="pig" data-name="pig">
+  <img class="hidden" src="images/rooster.png" alt="rooster" data-name="rooster">
+  <img class="hidden" src="images/sheep.png" alt="sheep" data-name="sheep">
+  <img class="hidden" src="images/stop.png" alt="stop" data-name="stop">
+</section>
+<section id="soundLoader" class="hidden">
+  <audio class="hidden" controls preload="auto" src="sounds/cat.ogg" data-name="cat">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/chicken.ogg" data-name="chicken">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/cow.ogg" data-name="cow">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/dog.ogg" data-name="dog">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/horse.ogg" data-name="horse">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/mouse.ogg" data-name="mouse">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/pig.ogg" data-name="pig">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/rooster.ogg" data-name="rooster">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/sheep.ogg" data-name="sheep">Your browser does not support the audio element.</audio>
+</section>
+<section id="musicLoader" class="hidden">
+  <audio class="hidden" controls preload="auto" src="sounds/farm.ogg" data-name="farm">Your browser does not support the audio element.</audio>
+</section>
+
+<main>
+<h1>Soundboard</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 56 - 67</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+windowWidth = 600
+windowHeight = 650
+
+pygame.init()
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+pygame.display.set_caption(&#x27;Soundboard&#x27;)
+
+buttons = []
+stopButton = { &quot;image&quot; : pygame.image.load(&quot;assets/images/stop.png&quot;), &quot;position&quot; : (275, 585)}
+
+mousePosition = None
+volume = 1.0
+
+pygame.mixer.init()
+pygame.mixer.music.load(&#x27;assets/sounds/OGG/farm.ogg&#x27;)
+pygame.mixer.music.play(-1)
+
+def drawButtons():
+
+  for button in buttons:
+    surface.blit(button[&quot;image&quot;], button[&quot;position&quot;])
+
+  surface.blit(stopButton[&quot;image&quot;], stopButton[&#x27;position&#x27;])
+
+def drawVolume():
+
+  pygame.draw.rect(surface, (229, 229, 229), (450, 610, 100, 5))
+
+  volumePosition = (100 / 100) * (volume * 100)
+
+  pygame.draw.rect(surface, (204, 204, 204), (450 + volumePosition, 600, 10, 25))
+
+def handleClick():
+
+  global mousePosition, volume
+
+  for button in buttons:
+
+    buttonSize = button[&#x27;image&#x27;].get_rect().size
+    buttonPosition = button[&#x27;position&#x27;]
+
+    if mousePosition[0] &gt; buttonPosition[0] and mousePosition[0] &lt; buttonPosition[0] + buttonSize[0]:
+
+      if mousePosition[1] &gt; buttonPosition[1] and mousePosition[1] &lt; buttonPosition[1] + buttonSize[1]:
+        button[&#x27;sound&#x27;].set_volume(volume)
+        button[&#x27;sound&#x27;].play()
+
+    if mousePosition[0] &gt; stopButton[&#x27;position&#x27;][0] and mousePosition[0] &lt; stopButton[&#x27;position&#x27;][0] + stopButton[&#x27;image&#x27;].get_rect().size[0]:
+      if mousePosition[1] &gt; stopButton[&#x27;position&#x27;][1] and mousePosition[1] &lt; stopButton[&#x27;position&#x27;][1] + stopButton[&#x27;image&#x27;].get_rect().size[1]:
+        pygame.mixer.stop()
+
+def checkVolume():
+
+  global mousePosition, volume
+
+  if pygame.mouse.get_pressed()[0] == True:
+
+    if mousePosition[1] &gt; 600 and mousePosition[1] &lt; 625:
+      if mousePosition[0] &gt; 450 and mousePosition[0] &lt; 550:
+        volume = float((mousePosition[0] - 450)) / 100
+
+def quitGame():
+  pygame.quit()
+  sys.exit()
+
+# Create Buttons
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/sheep.png&quot;), &quot;position&quot; : (25, 25), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/sheep.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/rooster.png&quot;), &quot;position&quot; : (225, 25), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/rooster.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/pig.png&quot;), &quot;position&quot; : (425, 25), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/pig.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/mouse.png&quot;), &quot;position&quot; : (25, 225), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/mouse.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/horse.png&quot;), &quot;position&quot; : (225, 225), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/horse.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/dog.png&quot;), &quot;position&quot; : (425, 225), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/dog.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/cow.png&quot;), &quot;position&quot; : (25, 425), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/cow.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/chicken.png&quot;), &quot;position&quot; : (225, 425), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/chicken.ogg&#x27;)})
+buttons.append({ &quot;image&quot; : pygame.image.load(&quot;assets/images/cat.png&quot;), &quot;position&quot; : (425, 425), &quot;sound&quot; : pygame.mixer.Sound(&#x27;assets/sounds/OGG/cat.ogg&#x27;)})
+
+# &#x27;main&#x27; loop
+while True:
+
+  surface.fill((255,255,255))
+
+  mousePosition = pygame.mouse.get_pos()
+
+  for event in GAME_EVENTS.get():
+
+    if event.type == pygame.KEYDOWN:
+
+      if event.key == pygame.K_ESCAPE:
+        quitGame()
+
+    if event.type == GAME_GLOBALS.QUIT:
+      quitGame()
+
+    if event.type == pygame.MOUSEBUTTONUP:
+      handleClick()
+
+  drawButtons()
+  checkVolume()
+  drawVolume()
+
+  pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 600;
+HEIGHT = 650;
+TITLE = 'Soundboard';
+
+var buttons, stopButton, mousePosition, volume;
+
+function reset() {
+  buttons = [];
+  stopButton = { image: "stop", position: [275, 585] };
+
+  mousePosition = null;
+  volume = 1.0;
+
+  music.play('farm');
+
+  // Create Buttons
+  buttons.push({ image: "sheep", position: [25, 25], sound: 'sheep' });
+  buttons.push({ image: "rooster", position: [225, 25], sound: 'rooster' });
+  buttons.push({ image: "pig", position: [425, 25], sound: 'pig' });
+  buttons.push({ image: "mouse", position: [25, 225], sound: 'mouse' });
+  buttons.push({ image: "horse", position: [225, 225], sound: 'horse' });
+  buttons.push({ image: "dog", position: [425, 225], sound: 'dog' });
+  buttons.push({ image: "cow", position: [25, 425], sound: 'cow' });
+  buttons.push({ image: "chicken", position: [225, 425], sound: 'chicken' });
+  buttons.push({ image: "cat", position: [425, 425], sound: 'cat' });
+}
+
+function drawButtons() {
+  for (let button of buttons) {
+    screen.blit(button["image"], button["position"]);
+  }
+
+  screen.blit(stopButton["image"], stopButton['position']);
+}
+
+function drawVolume() {
+  screen.draw.filled_rect(new Rect(450, 610, 100, 5), [229, 229, 229]);
+
+  screen.draw.filled_rect(new Rect(450 + (volume * 100), 600, 10, 25), [204, 204, 204]);
+}
+
+function on_mouse_up(pos) {
+  for (let button of buttons) {
+    let buttonActor = new Actor(button['image']),
+        stopActor = new Actor(stopButton['image']);
+    buttonActor.topleft = button['position'];
+    stopActor.topleft = stopButton['position'];
+
+    if (buttonActor.collidepoint(pos)) {
+      sounds[button['sound']].volume = volume;
+      sounds[button['sound']].play();
+    }
+
+    if (stopActor.collidepoint(pos)) {
+      music.stop();
+    }
+  }
+}
+
+function on_mouse_down(pos) {
+  if ((pos[1] > 600) && (pos[1] < 625)) {
+    if ((pos[0] > 450) && (pos[0] < 550)) {
+      volume = (pos[0] - 450) / 100;
+    }
+  }
+}
+
+function draw() {
+  screen.fill([255, 255, 255]);
+
+  drawButtons();
+  drawVolume();
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
