@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collisions</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+
+<main>
+<h1>Collisions</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 81 - 93</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random, math
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+windowWidth = 1024
+windowHeight = 768
+
+pygame.init()
+clock = pygame.time.Clock()
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+
+pygame.display.set_caption(&#x27;Collisions&#x27;)
+
+previousMousePosition = [0,0]
+mousePosition = None
+mouseDown = False
+
+collidables = []
+currentObject = None
+expanding = True
+
+drawAttractions = False
+
+gravity = 1.0
+
+def drawCollidables():
+
+	for anObject in collidables:
+		anObject[&quot;position&quot;][0] += anObject[&quot;velocity&quot;][0]
+		anObject[&quot;position&quot;][1] += anObject[&quot;velocity&quot;][1]
+
+		pygame.draw.circle(surface, (255,255,255), (int(anObject[&quot;position&quot;][0]), int(anObject[&quot;position&quot;][1])), int(anObject[&quot;radius&quot;]), 0)
+
+def drawCurrentObject():
+
+	global expanding, currentObject
+
+	currentObject[&quot;position&quot;][0] = mousePosition[0]
+	currentObject[&quot;position&quot;][1] = mousePosition[1]
+
+	if expanding is True and currentObject[&quot;radius&quot;] &lt; 30:
+		currentObject[&quot;radius&quot;] += 0.2
+
+		if currentObject[&quot;radius&quot;] &gt;= 30:
+			expanding = False
+			currentObject[&quot;radius&quot;] = 9.9
+
+	elif expanding is False and currentObject[&quot;radius&quot;] &gt; 1:
+		currentObject[&quot;radius&quot;] -= 0.2
+
+		if currentObject[&quot;radius&quot;] &lt;= 1:
+			expanding = True
+			currentObject[&quot;radius&quot;] = 1.1
+
+	currentObject[&quot;mass&quot;] = currentObject[&quot;radius&quot;]
+
+	pygame.draw.circle(surface, (255,0,0), (int(currentObject[&quot;position&quot;][0]), int(currentObject[&quot;position&quot;][1])), int(currentObject[&quot;radius&quot;]), 0)
+
+def calculateMovement():
+
+	for anObject in collidables:
+
+		for theOtherObject in collidables:
+
+			if anObject is not theOtherObject:
+
+				direction = (theOtherObject[&quot;position&quot;][0] - anObject[&quot;position&quot;][0], theOtherObject[&quot;position&quot;][1] - anObject[&quot;position&quot;][1])
+				magnitude = math.hypot(theOtherObject[&quot;position&quot;][0] - anObject[&quot;position&quot;][0], theOtherObject[&quot;position&quot;][1] - anObject[&quot;position&quot;][1])
+				nDirection = (direction[0] / magnitude, direction[1] / magnitude)
+
+				if magnitude &lt; 5:
+					magnitude = 5
+				elif magnitude &gt; 15:
+					magnitude = 15
+
+				strength = ((gravity * anObject[&quot;mass&quot;] * theOtherObject[&quot;mass&quot;]) / (magnitude * magnitude)) / theOtherObject[&quot;mass&quot;]
+
+				appliedForce = (nDirection[0] * strength, nDirection[1] * strength)
+
+				theOtherObject[&quot;velocity&quot;][0] -= appliedForce[0]
+				theOtherObject[&quot;velocity&quot;][1] -= appliedForce[1]
+
+				if drawAttractions is True:
+					pygame.draw.line(surface, (255,255,255), (anObject[&quot;position&quot;][0],anObject[&quot;position&quot;][1]), (theOtherObject[&quot;position&quot;][0],theOtherObject[&quot;position&quot;][1]), 1)
+
+def handleCollisions():
+
+	h = 0
+
+	while h &lt; len(collidables):
+
+		i = 0
+
+		anObject = collidables[h]
+
+		while i &lt; len(collidables):
+
+			otherObject = collidables[i]
+
+			if anObject != otherObject:
+
+				distance = math.hypot(otherObject[&quot;position&quot;][0] - anObject[&quot;position&quot;][0], otherObject[&quot;position&quot;][1] - anObject[&quot;position&quot;][1])
+
+				if distance &lt; otherObject[&quot;radius&quot;] + anObject[&quot;radius&quot;]:
+
+					# First we get the angle of the collision between the two objects
+					collisionAngle = math.atan2(anObject[&quot;position&quot;][1] - otherObject[&quot;position&quot;][1], anObject[&quot;position&quot;][0] - otherObject[&quot;position&quot;][0])
+
+					#Then we need to calculate the speed of each object
+					anObjectSpeed = math.sqrt(anObject[&quot;velocity&quot;][0] * anObject[&quot;velocity&quot;][0] + anObject[&quot;velocity&quot;][1] * anObject[&quot;velocity&quot;][1])
+					theOtherObjectSpeed = math.sqrt(otherObject[&quot;velocity&quot;][0] * otherObject[&quot;velocity&quot;][0] + otherObject[&quot;velocity&quot;][1] * otherObject[&quot;velocity&quot;][1])
+
+					# Now, we work out the direction of the objects in radians
+					anObjectDirection = math.atan2(anObject[&quot;velocity&quot;][1], anObject[&quot;velocity&quot;][0])
+					theOtherObjectDirection = math.atan2(otherObject[&quot;velocity&quot;][1], otherObject[&quot;velocity&quot;][0])
+
+					# Now we calculate the new X/Y values of each object for the collision
+					anObjectsNewVelocityX = anObjectSpeed * math.cos(anObjectDirection - collisionAngle)
+					anObjectsNewVelocityY = anObjectSpeed * math.sin(anObjectDirection - collisionAngle)
+
+					otherObjectsNewVelocityX = theOtherObjectSpeed * math.cos(theOtherObjectDirection - collisionAngle)
+					otherObjectsNewVelocityY = theOtherObjectSpeed * math.sin(theOtherObjectDirection - collisionAngle)
+
+					# We adjust the velocity based on the mass of the objects
+					anObjectsFinalVelocityX = ((anObject[&quot;mass&quot;] - otherObject[&quot;mass&quot;]) * anObjectsNewVelocityX + (otherObject[&quot;mass&quot;] + otherObject[&quot;mass&quot;]) * otherObjectsNewVelocityX)/(anObject[&quot;mass&quot;] + otherObject[&quot;mass&quot;])
+					otherObjectsFinalVelocityX = ((anObject[&quot;mass&quot;] + anObject[&quot;mass&quot;]) * anObjectsNewVelocityX + (otherObject[&quot;mass&quot;] - anObject[&quot;mass&quot;]) * otherObjectsNewVelocityX)/(anObject[&quot;mass&quot;] + otherObject[&quot;mass&quot;])
+
+					# Now we set those values
+					anObject[&quot;velocity&quot;][0] = anObjectsFinalVelocityX
+					otherObject[&quot;velocity&quot;][0] = otherObjectsFinalVelocityX
+
+
+			i += 1
+
+		h += 1
+
+def handleMouseDown():
+	global currentObject
+
+	currentObject = {
+		&quot;radius&quot; : 3,
+		&quot;mass&quot; : 3,
+		&quot;velocity&quot; : [0,0],
+		&quot;position&quot; : [0,0]
+	}
+
+def quitGame():
+	pygame.quit()
+	sys.exit()
+
+# &#x27;main&#x27; loop
+while True:
+
+	surface.fill((0,0,0))
+	mousePosition = pygame.mouse.get_pos()
+
+	# Handle user and system events
+	for event in GAME_EVENTS.get():
+
+		if event.type == pygame.KEYDOWN:
+
+			if event.key == pygame.K_ESCAPE:
+				quitGame()
+
+		if event.type == pygame.KEYUP:
+
+			if event.key == pygame.K_r:
+				collidables = []
+			if event.key == pygame.K_a:
+				if drawAttractions is True:
+					drawAttractions = False
+				elif drawAttractions is False:
+					drawAttractions = True
+
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			mouseDown = True
+			handleMouseDown()
+
+		if event.type == pygame.MOUSEBUTTONUP:
+			mouseDown = False
+
+		if event.type == GAME_GLOBALS.QUIT:
+			quitGame()
+
+	calculateMovement()
+	handleCollisions()
+	drawCollidables()
+
+	if currentObject is not None:
+		drawCurrentObject()
+
+		# If our user has released the mouse, add the new anObject to the collidables list and let gravity do its thing
+		if mouseDown is False:
+			currentObject[&quot;velocity&quot;][0] = (mousePosition[0] - previousMousePosition[0]) / 4
+			currentObject[&quot;velocity&quot;][1] = (mousePosition[1] - previousMousePosition[1]) / 4
+			collidables.append(currentObject)
+			currentObject = None
+
+	# Store the previous mouse coordinates to create a vector when we release a new anObject
+	previousMousePosition = mousePosition
+
+	clock.tick(60)
+	pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 1024;
+HEIGHT = 768;
+TITLE = 'Collisions';
+
+const GRAVITY = 1.0;
+
+var previousMousePosition, mousePosition, mouseDown, collidables, currentObject, expanding, drawAttractions;
+
+function reset() {
+  previousMousePosition = [0, 0];
+  mousePosition = null;
+  mouseDown = false;
+
+  collidables = [];
+  currentObject = null;
+  expanding = false;
+
+  drawAttractions = false;
+}
+
+function setCurrentObject() {
+  currentObject["position"][0] = mousePosition[0];
+  currentObject["position"][1] = mousePosition[1];
+
+  if (expanding && (currentObject["radius"] < 30)) {
+    currentObject["radius"] += 0.2;
+
+    if (currentObject["radius"] >= 30) {
+      expanding = false;
+      currentObject["radius"] = 9.9;
+    }
+  }
+
+  else if ((!expanding) && (currentObject["radius"] > 1)) {
+    currentObject["radius"] -= 0.2;
+
+    if (currentObject["radius"] <= 1) {
+      expanding = true;
+      currentObject["radius"] = 1.1;
+    }
+  }
+
+  currentObject["mass"] = currentObject["radius"];
+}
+
+function calculateMovement() {
+  for (let anObject of collidables) {
+    for (let theOtherObject of collidables) {
+      if (anObject != theOtherObject) {
+        let direction = [theOtherObject["position"][0] - anObject["position"][0], theOtherObject["position"][1] - anObject["position"][1]],
+            magnitude = Math.hypot(theOtherObject["position"][0] - anObject["position"][0], theOtherObject["position"][1] - anObject["position"][1]),
+            nDirection = [direction[0] / magnitude, direction[1] / magnitude],
+            strength, appliedForce;
+
+        if (magnitude < 5) {
+          magnitude = 5;
+        }
+        else if (magnitude > 15) {
+          magnitude = 15;
+        }
+
+        strength = ((GRAVITY * anObject["mass"] * theOtherObject["mass"]) / (magnitude * magnitude)) / theOtherObject["mass"];
+
+        appliedForce = [nDirection[0] * strength, nDirection[1] * strength];
+
+        theOtherObject["velocity"][0] -= appliedForce[0];
+        theOtherObject["velocity"][1] -= appliedForce[1];
+      }
+    }
+  }
+}
+
+function handleCollisions() {
+  for (let h = 0; h < collidables.length; h++) {
+    for (let i = 0; i < collidables.length; i++) {
+      if (collidables[h] != collidables[i]) {
+        let anObject = collidables[h],
+            otherObject = collidables[i],
+            distance = Math.hypot(otherObject["position"][0] - anObject["position"][0], otherObject["position"][1] - anObject["position"][1]),
+            collisionAngle,
+            anObjectSpeed, theOtherObjectSpeed,
+            anObjectDirection, theOtherObjectDirection,
+            anObjectsNewVelocityX, anObjectsNewVelocityY, otherObjectsNewVelocityX, otherObjectsNewVelocityY,
+            anObjectsFinalVelocityX, otherObjectsFinalVelocityX;
+
+        if (distance < (otherObject["radius"] + anObject["radius"])) {
+          // First we get the angle of the collision between the two objects
+          collisionAngle = Math.atan2(anObject["position"][1] - otherObject["position"][1], anObject["position"][0] - otherObject["position"][0]);
+
+          //Then we need to calculate the speed of each object
+          anObjectSpeed = Math.sqrt((anObject["velocity"][0] * anObject["velocity"][0]) + (anObject["velocity"][1] * anObject["velocity"][1]));
+          theOtherObjectSpeed = Math.sqrt((otherObject["velocity"][0] * otherObject["velocity"][0]) + (otherObject["velocity"][1] * otherObject["velocity"][1]));
+
+          // Now, we work out the direction of the objects in radians
+          anObjectDirection = Math.atan2(anObject["velocity"][1], anObject["velocity"][0]);
+          theOtherObjectDirection = Math.atan2(otherObject["velocity"][1], otherObject["velocity"][0]);
+
+          // Now we calculate the new X/Y values of each object for the collision
+          anObjectsNewVelocityX = anObjectSpeed * Math.cos(anObjectDirection - collisionAngle);
+          anObjectsNewVelocityY = anObjectSpeed * Math.sin(anObjectDirection - collisionAngle);
+
+          otherObjectsNewVelocityX = theOtherObjectSpeed * Math.cos(theOtherObjectDirection - collisionAngle);
+          otherObjectsNewVelocityY = theOtherObjectSpeed * Math.sin(theOtherObjectDirection - collisionAngle);
+
+          // We adjust the velocity based on the mass of the objects
+          anObjectsFinalVelocityX = (((anObject["mass"] - otherObject["mass"]) * anObjectsNewVelocityX) + ((otherObject["mass"] + otherObject["mass"]) * otherObjectsNewVelocityX)) / (anObject["mass"] + otherObject["mass"]);
+          otherObjectsFinalVelocityX = (((anObject["mass"] + anObject["mass"]) * anObjectsNewVelocityX) + ((otherObject["mass"] - anObject["mass"]) * otherObjectsNewVelocityX)) / (anObject["mass"] + otherObject["mass"]);
+
+          // Now we set those values
+          anObject["velocity"][0] = anObjectsFinalVelocityX;
+          otherObject["velocity"][0] = otherObjectsFinalVelocityX;
+        }
+      }
+    }
+  }
+}
+
+function on_mouse_down(pos) {
+  mouseDown = true;
+
+  currentObject = {
+    radius: 3,
+    mass: 3,
+    velocity: [0, 0],
+    position: [0, 0]
+  }
+}
+
+function on_mouse_up(pos) {
+  mouseDown = false;
+}
+
+function on_mouse_move(pos) {
+  // Store the previous mouse coordinates to create a vector when we release a new anObject
+  previousMousePosition = mousePosition;
+  mousePosition = pos;
+}
+
+function on_key_up(key) {
+  if (key === keys.R) {
+    collidables = [];
+  }
+  if (key === keys.A) {
+    if (drawAttractions) {
+      drawAttractions = false;
+    }
+    else if (!drawAttractions) {
+      drawAttractions = true;
+    }
+  }
+}
+
+function draw() {
+  screen.fill([0, 0, 0]);
+
+  for (let anObject of collidables) {
+    for (let theOtherObject of collidables) {
+      if (anObject != theOtherObject) {
+        if (drawAttractions) {
+          screen.draw.line(anObject["position"], theOtherObject["position"], [255, 255, 255]);
+        }
+      }
+    }
+  }
+
+  for (let anObject of collidables) {
+    screen.draw.filled_circle([Math.trunc(anObject["position"][0]), Math.trunc(anObject["position"][1])], Math.trunc(anObject["radius"]), [255, 255, 255]);
+  }
+
+  if (currentObject != null) {
+    screen.draw.filled_circle([Math.trunc(currentObject["position"][0]), Math.trunc(currentObject["position"][1])], Math.trunc(currentObject["radius"]), [255, 0, 0]);
+  }
+}
+
+function update() {
+  calculateMovement();
+  handleCollisions();
+  for (let anObject of collidables) {
+    anObject["position"][0] += anObject["velocity"][0];
+    anObject["position"][1] += anObject["velocity"][1];
+  }
+
+  if (currentObject != null) {
+    setCurrentObject();
+
+    // If our user has released the mouse, add the new anObject to the collidables list and let gravity do its thing
+    if (!mouseDown) {
+      currentObject["velocity"][0] = (mousePosition[0] - previousMousePosition[0]) / 4;
+      currentObject["velocity"][1] = (mousePosition[1] - previousMousePosition[1]) / 4;
+      collidables.push(currentObject);
+      currentObject = null;
+    }
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
