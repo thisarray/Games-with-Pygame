@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar System Simulator</title>
+  <script src="../../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/background.jpg" alt="background" data-name="background">
+  <img class="hidden" src="images/earth.png" alt="earth" data-name="earth">
+  <img class="hidden" src="images/jupiter.png" alt="jupiter" data-name="jupiter">
+  <img class="hidden" src="images/logo.png" alt="logo" data-name="logo">
+  <img class="hidden" src="images/mars.png" alt="mars" data-name="mars">
+  <img class="hidden" src="images/mercury.png" alt="mercury" data-name="mercury">
+  <img class="hidden" src="images/neptune.png" alt="neptune" data-name="neptune">
+  <img class="hidden" src="images/saturn.png" alt="saturn" data-name="saturn">
+  <img class="hidden" src="images/tabs.png" alt="tabs" data-name="tabs">
+  <img class="hidden" src="images/uranus.png" alt="uranus" data-name="uranus">
+  <img class="hidden" src="images/venus.png" alt="venus" data-name="venus">
+</section>
+
+<main>
+<h1>Solar System Simulator</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 68 - 80</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random, math
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+import pygame, copy
+
+images = {
+	&quot;mercury&quot; : pygame.image.load(&quot;assets/mercury.png&quot;),
+	&quot;venus&quot; : pygame.image.load(&quot;assets/venus.png&quot;),
+	&quot;earth&quot; : pygame.image.load(&quot;assets/earth.png&quot;),
+	&quot;mars&quot; : pygame.image.load(&quot;assets/mars.png&quot;),
+	&quot;jupiter&quot; : pygame.image.load(&quot;assets/jupiter.png&quot;),
+	&quot;saturn&quot; : pygame.image.load(&quot;assets/saturn.png&quot;),
+	&quot;neptune&quot; : pygame.image.load(&quot;assets/neptune.png&quot;),
+	&quot;uranus&quot; : pygame.image.load(&quot;assets/uranus.png&quot;),
+}
+
+planets = [{
+	&quot;name&quot; : &quot;mercury&quot;,
+	&quot;radius&quot; : 15.0,
+	&quot;mass&quot; : 0.6,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;venus&quot;,
+	&quot;radius&quot; : 23.0,
+	&quot;mass&quot; : 0.95,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;earth&quot;,
+	&quot;radius&quot; : 24.0,
+	&quot;mass&quot; : 1.0,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;mars&quot;,
+	&quot;radius&quot; : 15.0,
+	&quot;mass&quot; : 0.4,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;jupiter&quot;,
+	&quot;radius&quot; : 37.0,
+	&quot;mass&quot; : 15.0,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;saturn&quot;,
+	&quot;radius&quot; : 30.0,
+	&quot;mass&quot; : 4,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;neptune&quot;,
+	&quot;radius&quot; : 30.0,
+	&quot;mass&quot; : 4.2,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+},
+{
+	&quot;name&quot; : &quot;uranus&quot;,
+	&quot;radius&quot; : 30.0,
+	&quot;mass&quot; : 3.8,
+	&quot;velocity&quot; : [0,0],
+	&quot;position&quot; : [0,0]
+}]
+
+def makeNewPlanet(which):
+
+	for pieceOfRock in planets:
+
+		if pieceOfRock[&quot;name&quot;] == which:
+			return copy.deepcopy(pieceOfRock)
+
+	return False
+
+windowWidth = 1024
+windowHeight = 768
+
+pygame.init()
+clock = pygame.time.Clock()
+surface = pygame.display.set_mode((windowWidth, windowHeight), pygame.FULLSCREEN)
+
+pygame.display.set_caption(&#x27;Solar System Simulator&#x27;)
+
+previousMousePosition = [0,0]
+mousePosition = None
+mouseDown = False
+
+background = pygame.image.load(&quot;assets/background.jpg&quot;)
+logo = pygame.image.load(&quot;assets/logo.png&quot;)
+UITab = pygame.image.load(&quot;assets/tabs.png&quot;)
+UICoordinates = [{&quot;name&quot; : &quot;mercury&quot;, &quot;coordinates&quot; : (132,687)}, {&quot;name&quot; : &quot;venus&quot;, &quot;coordinates&quot; : (229,687)}, {&quot;name&quot; : &quot;earth&quot;, &quot;coordinates&quot; : (326,687)}, {&quot;name&quot; : &quot;mars&quot;, &quot;coordinates&quot; : (423,687)}, {&quot;name&quot; : &quot;jupiter&quot;, &quot;coordinates&quot; : (520,687)}, {&quot;name&quot; : &quot;saturn&quot;, &quot;coordinates&quot; : (617,687)}, {&quot;name&quot; : &quot;neptune&quot;, &quot;coordinates&quot; : (713,687)}, {&quot;name&quot; : &quot;uranus&quot;, &quot;coordinates&quot; : (810,687)}]
+
+celestialBodies = []
+currentBody = None
+
+drawAttractions = True
+
+gravity = 10.0
+
+def drawUI():
+	surface.blit(UITab, (131,687))
+	surface.blit(images[&quot;mercury&quot;], (158,714))
+	surface.blit(images[&quot;venus&quot;], (247,706))
+	surface.blit(images[&quot;earth&quot;], (344,704))
+	surface.blit(images[&quot;mars&quot;], (451,714))
+	surface.blit(images[&quot;jupiter&quot;], (524,692))
+	surface.blit(images[&quot;saturn&quot;], (620,695))
+	surface.blit(images[&quot;neptune&quot;], (724,697))
+	surface.blit(images[&quot;uranus&quot;], (822,697))
+
+def drawPlanets():
+
+	for planet in celestialBodies:
+		planet[&quot;position&quot;][0] += planet[&quot;velocity&quot;][0]
+		planet[&quot;position&quot;][1] += planet[&quot;velocity&quot;][1]
+		surface.blit(images[planet[&quot;name&quot;]], (planet[&quot;position&quot;][0] - planet[&quot;radius&quot;], planet[&quot;position&quot;][1] - planet[&quot;radius&quot;]))
+
+def drawCurrentBody():
+
+	currentBody[&quot;position&quot;][0] = mousePosition[0]
+	currentBody[&quot;position&quot;][1] = mousePosition[1]
+
+	surface.blit(images[currentBody[&quot;name&quot;]], (currentBody[&quot;position&quot;][0] - currentBody[&quot;radius&quot;], currentBody[&quot;position&quot;][1] - currentBody[&quot;radius&quot;]))
+
+def calculateMovement():
+
+	for planet in celestialBodies:
+
+		for otherPlanet in celestialBodies:
+
+			if otherPlanet is not planet:
+
+				direction = (otherPlanet[&quot;position&quot;][0] - planet[&quot;position&quot;][0], otherPlanet[&quot;position&quot;][1] - planet[&quot;position&quot;][1]) # The difference in the X, Y coordinates of the objects
+				magnitude = math.hypot(otherPlanet[&quot;position&quot;][0] - planet[&quot;position&quot;][0], otherPlanet[&quot;position&quot;][1] - planet[&quot;position&quot;][1]) # The distance between the two objects
+				nDirection = (direction[0] / magnitude, direction[1] / magnitude) # Normalised Vector pointing in the direction of the force
+
+				## We need to limit the gravity to stop things flying off to infinity... and beyond!
+				if magnitude &lt; 5:
+					magnitude = 5
+				elif magnitude &gt; 30:
+					magnitude = 30
+
+				strength = ((gravity * planet[&quot;mass&quot;] * otherPlanet[&quot;mass&quot;]) / (magnitude * magnitude)) / otherPlanet[&quot;mass&quot;] # How strong should the attraction be?
+
+				appliedForce = (nDirection[0] * strength, nDirection[1] * strength)
+
+				otherPlanet[&quot;velocity&quot;][0] -= appliedForce[0]
+				otherPlanet[&quot;velocity&quot;][1] -= appliedForce[1]
+
+				if drawAttractions is True:
+					pygame.draw.line(surface, (255,255,255), (planet[&quot;position&quot;][0],planet[&quot;position&quot;][1]), (otherPlanet[&quot;position&quot;][0],otherPlanet[&quot;position&quot;][1]), 1)
+
+def checkUIForClick(coordinates):
+
+	for tab in UICoordinates:
+		tabX = tab[&quot;coordinates&quot;][0]
+
+		if coordinates[0] &gt; tabX and coordinates[0] &lt; tabX + 82:
+			return tab[&quot;name&quot;]
+
+	return False
+
+def handleMouseDown():
+	global mousePosition, currentBody
+
+	if(mousePosition[1] &gt;= 687):
+		newPlanet = checkUIForClick(mousePosition)
+
+		if newPlanet is not False:
+			currentBody = makeNewPlanet(newPlanet)
+
+
+def quitGame():
+	pygame.quit()
+	sys.exit()
+
+# &#x27;main&#x27; loop
+while True:
+
+	mousePosition = pygame.mouse.get_pos()
+	surface.blit(background, (0,0))
+
+	# Handle user and system events
+	for event in GAME_EVENTS.get():
+
+		if event.type == pygame.KEYDOWN:
+
+			if event.key == pygame.K_ESCAPE:
+				quitGame()
+
+		if event.type == pygame.KEYUP:
+
+			if event.key == pygame.K_r:
+				celestialBodies = []
+			if event.key == pygame.K_a:
+				if drawAttractions is True:
+					drawAttractions = False
+				elif drawAttractions is False:
+					drawAttractions = True
+
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			mouseDown = True
+			handleMouseDown()
+
+		if event.type == pygame.MOUSEBUTTONUP:
+			mouseDown = False
+
+		if event.type == GAME_GLOBALS.QUIT:
+			quitGame()
+
+	# Draw the UI; Update the movement of the planets; Draw the planets in their new positions.
+	drawUI()
+	calculateMovement()
+	drawPlanets()
+
+	# If our user has created a new planet, draw it where the mouse is
+	if currentBody is not None:
+		drawCurrentBody()
+
+		# If our user has released the mouse, add the new planet to the celestialBodies list and let gravity do its thing
+		if mouseDown is False:
+			currentBody[&quot;velocity&quot;][0] = (mousePosition[0] - previousMousePosition[0]) / 4
+			currentBody[&quot;velocity&quot;][1] = (mousePosition[1] - previousMousePosition[1]) / 4
+			celestialBodies.append(currentBody)
+			currentBody = None
+
+	# Draw the logo for the first four seconds of the program
+	if GAME_TIME.get_ticks() &lt; 4000:
+		surface.blit(logo, (108,77))
+
+	# Store the previous mouse coordinates to create a vector when we release a new planet
+	previousMousePosition = mousePosition
+
+	clock.tick(60)
+	pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 1024;
+HEIGHT = 768;
+TITLE = 'Solar System Simulator';
+
+const PLANETS = [{
+  name: "mercury",
+  radius: 15.0,
+  mass: 0.6,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "venus",
+  radius: 23.0,
+  mass: 0.95,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "earth",
+  radius: 24.0,
+  mass: 1.0,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "mars",
+  radius: 15.0,
+  mass: 0.4,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "jupiter",
+  radius: 37.0,
+  mass: 15.0,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "saturn",
+  radius: 30.0,
+  mass: 4,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "neptune",
+  radius: 30.0,
+  mass: 4.2,
+  velocity: [0, 0],
+  position: [0, 0],
+},
+{
+  name: "uranus",
+  radius: 30.0,
+  mass: 3.8,
+  velocity: [0, 0],
+  position: [0, 0],
+}];
+
+function makeNewPlanet(which) {
+  for (let pieceOfRock of PLANETS) {
+    if (pieceOfRock["name"] === which) {
+      return {
+        name: pieceOfRock["name"],
+        radius: pieceOfRock["radius"],
+        mass: pieceOfRock["mass"],
+        velocity: [0, 0],
+        position: [0, 0],
+      };
+    }
+  }
+
+  return null;
+}
+
+const UICoordinates = new Map([
+  ["mercury", [132, 687]],
+  ["venus", [229, 687]],
+  ["earth", [326, 687]],
+  ["mars", [423, 687]],
+  ["jupiter", [520, 687]],
+  ["saturn", [617, 687]],
+  ["neptune", [713, 687]],
+  ["uranus", [810, 687]]
+]);
+
+const GRAVITY = 10.0;
+
+var previousMousePosition, mousePosition, mouseDown, celestialBodies, currentBody, drawAttractions;
+
+function reset() {
+  previousMousePosition = [0, 0];
+  mousePosition = null;
+  mouseDown = false;
+
+  celestialBodies = [];
+  currentBody = null;
+
+  drawAttractions = true;
+
+  timer = 0;
+}
+
+function drawUI() {
+  screen.blit("tabs", [131, 687]);
+  screen.blit("mercury", [158, 714]);
+  screen.blit("venus", [247, 706]);
+  screen.blit("earth", [344, 704]);
+  screen.blit("mars", [451, 714]);
+  screen.blit("jupiter", [524, 692]);
+  screen.blit("saturn", [620, 695]);
+  screen.blit("neptune", [724, 697]);
+  screen.blit("uranus", [822, 697]);
+}
+
+function calculateMovement() {
+  for (let planet of celestialBodies) {
+    for (let otherPlanet of celestialBodies) {
+      if (otherPlanet != planet) {
+        let direction = [otherPlanet["position"][0] - planet["position"][0], otherPlanet["position"][1] - planet["position"][1]], // The difference in the X, Y coordinates of the objects
+            magnitude = Math.hypot(otherPlanet["position"][0] - planet["position"][0], otherPlanet["position"][1] - planet["position"][1]), // The distance between the two objects
+            nDirection = [direction[0] / magnitude, direction[1] / magnitude], // Normalised Vector pointing in the direction of the force
+            strength, appliedForce;
+
+        // We need to limit the gravity to stop things flying off to infinity... and beyond!
+        if (magnitude < 5) {
+          magnitude = 5;
+        }
+        else if (magnitude > 30) {
+          magnitude = 30;
+        }
+
+        strength = ((GRAVITY * planet["mass"] * otherPlanet["mass"]) / (magnitude * magnitude)) / otherPlanet["mass"]; // How strong should the attraction be?
+
+        appliedForce = [nDirection[0] * strength, nDirection[1] * strength];
+
+        otherPlanet["velocity"][0] -= appliedForce[0];
+        otherPlanet["velocity"][1] -= appliedForce[1];
+      }
+    }
+  }
+}
+
+function checkUIForClick(coordinates) {
+  for (let [tab, pos] of UICoordinates) {
+    if ((coordinates[0] > pos[0]) && (coordinates[0] < (pos[0] + 82))) {
+      return tab;
+    }
+  }
+
+  return null;
+}
+
+function on_mouse_down(pos) {
+  mouseDown = true;
+
+  if (pos[1] >= 687) {
+    let newPlanet = checkUIForClick(pos);
+    if (newPlanet != null) {
+      currentBody = makeNewPlanet(newPlanet);
+    }
+  }
+}
+
+function on_mouse_up(pos) {
+  mouseDown = false;
+}
+
+function on_mouse_move(pos) {
+  // Store the previous mouse coordinates to create a vector when we release a new planet
+  previousMousePosition = mousePosition;
+  mousePosition = pos;
+}
+
+function on_key_up(key) {
+  if (key === keys.R) {
+    celestialBodies = [];
+  }
+  if (key === keys.A) {
+    if (drawAttractions) {
+      drawAttractions = false;
+    }
+    else if (!drawAttractions) {
+      drawAttractions = true;
+    }
+  }
+}
+
+function draw() {
+  screen.blit("background", [0, 0]);
+
+  // Draw the UI; Update the movement of the planets; Draw the planets in their new positions.
+  drawUI();
+  for (let planet of celestialBodies) {
+    screen.blit(planet["name"], [planet["position"][0] - planet["radius"], planet["position"][1] - planet["radius"]]);
+    for (let otherPlanet of celestialBodies) {
+      if (otherPlanet != planet) {
+        if (drawAttractions) {
+          screen.draw.line(planet["position"], otherPlanet["position"], [255, 255, 255], 1);
+        }
+      }
+    }
+  }
+
+  // If our user has created a new planet, draw it where the mouse is
+  if (currentBody != null) {
+    screen.blit(currentBody["name"], [currentBody["position"][0] - currentBody["radius"], currentBody["position"][1] - currentBody["radius"]]);
+  }
+
+  // Draw the logo for the first four seconds of the program
+  if (timer < 4) {
+    screen.blit("logo", [108, 77]);
+  }
+}
+
+function update(dt) {
+  timer += dt;
+
+  calculateMovement();
+  for (let planet of celestialBodies) {
+    planet["position"][0] += planet["velocity"][0];
+    planet["position"][1] += planet["velocity"][1];
+  }
+
+  if (currentBody != null) {
+    currentBody["position"][0] = mousePosition[0];
+    currentBody["position"][1] = mousePosition[1];
+
+    // If our user has released the mouse, add the new planet to the celestialBodies list and let gravity do its thing
+    if (!mouseDown) {
+      currentBody["velocity"][0] = (mousePosition[0] - previousMousePosition[0]) / 4;
+      currentBody["velocity"][1] = (mousePosition[1] - previousMousePosition[1]) / 4;
+      celestialBodies.push(currentBody);
+      currentBody = null;
+    }
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
