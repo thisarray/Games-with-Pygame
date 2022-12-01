@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fred's Bad Day</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/background.png" alt="background" data-name="background">
+  <img class="hidden" src="images/barrel.png" alt="barrel" data-name="barrel">
+  <img class="hidden" src="images/barrel_break.png" alt="barrel_break" data-name="barrel_break">
+  <img class="hidden" src="images/fred_left.png" alt="fred_left" data-name="fred_left">
+  <img class="hidden" src="images/fred_left_hit.png" alt="fred_left_hit" data-name="fred_left_hit">
+  <img class="hidden" src="images/fred_right.png" alt="fred_right" data-name="fred_right">
+  <img class="hidden" src="images/fred_right_hit.png" alt="fred_right_hit" data-name="fred_right_hit">
+  <img class="hidden" src="images/gameover.png" alt="gameover" data-name="gameover">
+  <img class="hidden" src="images/startgame.png" alt="startgame" data-name="startgame">
+</section>
+
+<main>
+<h1>Fred's Bad Day</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 94 - 113</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random, math
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+class FredClass():
+
+  x = 0
+  y = 625
+
+  isHit = False
+  timeHit = 0
+  health = 100
+
+  leftImage = None
+  rightImage = None
+  leftImageHit = None
+  rightImageHit = None
+
+  direction = 1
+  speed = 8
+  pygame = None
+
+  def reset(self, x):
+    self.x = x
+    self.y = 625
+
+    self.isHit = False
+    self.timeHit = 0
+    self.health = 100
+
+    self.direction = 1
+    self.speed = 8
+    self.pygame = None
+
+  def moveLeft(self, leftBound):
+
+    if self.direction is not 0:
+      self.direction = 0
+
+    if((self.x - self.speed) &gt; leftBound):
+      self.x -= self.speed
+
+  def moveRight(self, rightBound):
+
+    if self.direction is not 1:
+      self.direction = 1
+
+    if((self.x + self.speed) + 58 &lt; rightBound):
+      self.x += self.speed
+
+  def loadImages(self, pygame):
+    self.leftImage = pygame.image.load(&quot;assets/Fred-Left.png&quot;)
+    self.rightImage = pygame.image.load(&quot;assets/Fred-Right.png&quot;)
+    self.leftImageHit = pygame.image.load(&quot;assets/Fred-Left-Hit.png&quot;)
+    self.rightImageHit = pygame.image.load(&quot;assets/Fred-Right-Hit.png&quot;)
+
+  def draw(self, surface, time):
+
+    if time - self.timeHit &gt; 800:
+      self.timeHit = 0
+      self.isHit = False
+
+    if self.direction is 1:
+      if self.isHit is False:
+        surface.blit(self.rightImage, (self.x, self.y))
+      else :
+        surface.blit(self.rightImageHit, (self.x, self.y))
+    else :
+      if self.isHit is False:
+        surface.blit(self.leftImage, (self.x, self.y))
+      else :
+        surface.blit(self.leftImageHit, (self.x, self.y))
+
+  def __init__(self, x):
+    self.x = x
+
+class Barrel():
+
+  slots = [(4, 103), (82, 27), (157, 104), (234, 27), (310, 104), (388, 27), (463, 104), (539, 27), (615, 104), (691, 27), (768, 104), (845, 27), (920, 104)]
+  slot = 0
+  x = 0
+  y = 0
+
+  image = None
+  brokenImage = None
+
+  isBroken = False
+  timeBroken = 0
+  needsRemoving = False
+
+  size = [33,22]
+  ratio = 0.66
+
+  vy = 1.5
+  gravity = 1.05
+  maxY = 20
+
+  def split(self, time):
+    self.isBroken = True
+    self.timeBroken = time
+    self.vy = 5
+    self.x -= 10
+
+  def checkForCollision(self, fred):
+
+    hitX = False
+    hitY = False
+
+    if fred.x &gt; self.x and fred.x &lt; self.x + 75:
+      hitX = True
+    elif fred.x + 57 &gt; self.x and fred.x + 57 &lt; self.x + 75:
+      hitX = True
+    if fred.y + 120 &gt; self.y and fred.y &lt; self.y:
+      hitY = True
+    elif fred.y &lt; self.y + 48:
+      hitY = True
+    if hitX is True and hitY is True:
+      return True
+
+  def loadImages(self, pygame):
+    self.image = pygame.image.load(&quot;assets/Barrel.png&quot;)
+    self.brokenImage = pygame.image.load(&quot;assets/Barrel_break.png&quot;)
+
+  def move(self, windowHeight):
+
+    if self.vy &lt; self.maxY:
+      self.vy = self.vy * self.gravity
+    self.y += self.vy
+
+    if self.y &gt; windowHeight:
+      self.needsRemoving = True
+
+  def draw(self, surface, pygame):
+    if self.isBroken is True:
+      surface.blit(self.brokenImage, (self.x, self.y))
+    else :
+      surface.blit(self.image, (self.x, self.y))
+
+  def __init__(self, slot):
+    self.slot = slot
+    self.x = self.slots[slot][0]
+    self.y = self.slots[slot][1] + 24
+
+windowWidth = 1000
+windowHeight = 768
+
+pygame.init()
+pygame.font.init()
+clock = pygame.time.Clock()
+surface = pygame.display.set_mode((windowWidth, windowHeight), pygame.FULLSCREEN)
+
+pygame.display.set_caption(&#x27;Fred\&#x27;s Bad Day&#x27;)
+textFont = pygame.font.SysFont(&quot;monospace&quot;, 50)
+
+gameStarted = False
+gameStartedTime = 0
+gameFinishedTime = 0
+gameOver = False
+
+startScreen = pygame.image.load(&quot;assets/startgame.png&quot;)
+endScreen = pygame.image.load(&quot;assets/gameover.png&quot;)
+
+background = pygame.image.load(&quot;assets/background.png&quot;)
+Fred = FredClass(windowWidth / 2)
+Barrels = []
+lastBarrel = 0
+lastBarrelSlot = 0
+barrelInterval = 1500
+
+goLeft = False
+goRight = False
+
+def quitGame():
+	pygame.quit()
+	sys.exit()
+
+def newBarrel():
+	global Barrels, lastBarrel, lastBarrelSlot
+
+	slot = random.randint(0, 12)
+
+	while slot == lastBarrelSlot:
+		slot = random.randint(0, 12)
+
+	theBarrel = Barrel(slot)
+	theBarrel.loadImages(pygame)
+
+	Barrels.append(theBarrel)
+	lastBarrel = GAME_TIME.get_ticks()
+	lastBarrelSlot = slot
+
+Fred.loadImages(pygame)
+
+# &#x27;main&#x27; loop
+while True:
+
+	timeTick = GAME_TIME.get_ticks()
+
+	if gameStarted is True and gameOver is False:
+
+		surface.blit(background, (0, 0))
+
+		Fred.draw(surface, timeTick)
+
+		barrelsToRemove = []
+
+		for idx, barrel in enumerate(Barrels):
+			barrel.move(windowHeight)
+			barrel.draw(surface, pygame)
+
+			if barrel.isBroken is False:
+
+				hasCollided = barrel.checkForCollision(Fred);
+
+				if hasCollided is True:
+					barrel.split(timeTick)
+					Fred.isHit = True
+					Fred.timeHit = timeTick
+					if Fred.health &gt;= 10:
+						Fred.health -= 10
+					else :
+						gameOver = True
+						gameFinishedTime = timeTick
+
+			elif timeTick - barrel.timeBroken &gt; 1000:
+
+				barrelsToRemove.append(idx)
+				continue
+
+			if barrel.needsRemoving is True:
+				barrelsToRemove.append(idx)
+				continue
+
+		pygame.draw.rect(surface, (175,59,59), (0, windowHeight - 10, (windowWidth / 100) * Fred.health , 10))
+
+		for index in barrelsToRemove:
+			del Barrels[index]
+
+		if goLeft is True:
+			Fred.moveLeft(0)
+
+		if goRight is True:
+			Fred.moveRight(windowWidth)
+
+	elif gameStarted is False and gameOver is False:
+		surface.blit(startScreen, (0, 0))
+
+	elif gameStarted is True and gameOver is True:
+		surface.blit(endScreen, (0, 0))
+		timeLasted = (gameFinishedTime - gameStartedTime) / 1000
+
+		if timeLasted &lt; 10:
+			timeLasted = &quot;0&quot; + str(timeLasted)
+		else :
+			timeLasted = str(timeLasted)
+
+		renderedText = textFont.render(timeLasted, 1, (175,59,59))
+		surface.blit(renderedText, (495, 430))
+
+	# Handle user and system events
+	for event in GAME_EVENTS.get():
+
+		if event.type == pygame.KEYDOWN:
+
+			if event.key == pygame.K_ESCAPE:
+				quitGame()
+			elif event.key == pygame.K_LEFT:
+				goLeft = True
+				goRight = False
+			elif event.key == pygame.K_RIGHT:
+				goLeft = False
+				goRight = True
+			elif event.key == pygame.K_RETURN:
+				if gameStarted is False and gameOver is False:
+					gameStarted = True
+					gameStartedTime = timeTick
+				elif gameStarted is True and gameOver is True:
+					Fred.reset(windowWidth / 2)
+
+					Barrels = []
+					barrelInterval = 1500
+
+					gameOver = False
+
+	if event.type == pygame.KEYUP:
+
+		if event.key == pygame.K_LEFT:
+			goLeft = False
+		if event.key == pygame.K_RIGHT:
+			goRight = False
+
+		if event.type == GAME_GLOBALS.QUIT:
+			quitGame()
+
+	clock.tick(60)
+	pygame.display.update()
+
+	if GAME_TIME.get_ticks() - lastBarrel &gt; barrelInterval and gameStarted is True:
+		newBarrel()
+		if barrelInterval &gt; 150:
+			barrelInterval -= 50
+</code></pre>
+</main>
+
+<script>
+WIDTH = 1000;
+HEIGHT = 768;
+TITLE = "Fred's Bad Day";
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+class Fred {
+  static SPEED = 8;
+
+  constructor(x) {
+    this.x = x;
+    this.y = 625;
+
+    this.isHit = false;
+    this.timeHit = 0;
+    this.health = 100;
+
+    this.direction = 1;
+  }
+
+  moveLeft(leftBound) {
+    if (this.direction !== 0) {
+      this.direction = 0;
+    }
+
+    if ((this.x - Fred.SPEED) > leftBound) {
+      this.x -= Fred.SPEED;
+    }
+  }
+
+  moveRight(rightBound) {
+    if (this.direction !== 1) {
+      this.direction = 1;
+    }
+
+    if ((this.x + Fred.SPEED + 58) < rightBound) {
+      this.x += Fred.SPEED;
+    }
+  }
+
+  draw() {
+    if (this.direction === 1) {
+      if (!this.isHit) {
+        screen.blit("fred_right", [this.x, this.y]);
+      }
+      else {
+        screen.blit("fred_right_hit", [this.x, this.y]);
+      }
+    }
+    else {
+      if (!this.isHit) {
+        screen.blit("fred_left", [this.x, this.y]);
+      }
+      else {
+        screen.blit("fred_left_hit", [this.x, this.y]);
+      }
+    }
+  }
+
+  update(dt) {
+    this.timeHit += dt;
+    if (this.timeHit > 0.8) {
+      this.timeHit = 0;
+      this.isHit = false;
+    }
+  }
+}
+
+class Barrel {
+  static SLOTS = [[4, 103], [82, 27], [157, 104], [234, 27], [310, 104], [388, 27], [463, 104], [539, 27], [615, 104], [691, 27], [768, 104], [845, 27], [920, 104]];
+
+  static GRAVITY = 1.05;
+  static MAX_Y = 20;
+
+  constructor(slot) {
+    this.slot = slot;
+    this.x = Barrel.SLOTS[this.slot][0];
+    this.y = Barrel.SLOTS[this.slot][1] + 24;
+
+    this.isBroken = false;
+    this.timeBroken = 0;
+    this.needsRemoving = false;
+
+    this.vy = 1.5;
+  }
+
+  split() {
+    this.isBroken = true;
+    this.timeBroken = 0;
+    this.vy = 5;
+    this.x -= 10;
+  }
+
+  checkForCollision(fred) {
+    let hitX = false,
+        hitY = false;
+
+    if ((fred.x > this.x) && (fred.x < (this.x + 75))) {
+      hitX = true;
+    }
+    else if (((fred.x + 57) > this.x) && ((fred.x + 57) < (this.x + 75))) {
+      hitX = true;
+    }
+    if (((fred.y + 120) > this.y) && (fred.y < this.y)) {
+      hitY = true;
+    }
+    else if (fred.y < (this.y + 48)) {
+      hitY = true;
+    }
+    if (hitX && hitY) {
+      return true;
+    }
+    return false;
+  }
+
+  move() {
+    if (this.vy < Barrel.MAX_Y) {
+      this.vy = this.vy * Barrel.GRAVITY;
+    }
+    this.y += this.vy;
+
+    if (this.y > HEIGHT) {
+      this.needsRemoving = true;
+    }
+  }
+
+  draw() {
+    if (this.isBroken) {
+      screen.blit("barrel_break", [this.x, this.y]);
+    }
+    else {
+      screen.blit("barrel", [this.x, this.y]);
+    }
+  }
+
+  update(dt) {
+    if (this.isBroken) {
+      this.timeBroken += dt;
+    }
+  }
+}
+
+var gameStarted, timeLasted, gameOver, fred, barrels, lastBarrel, lastBarrelSlot, barrelInterval, goLeft, goRight;
+
+function reset() {
+  gameStarted = false;
+  timeLasted = 0;
+  gameOver = false;
+
+  fred = new Fred(WIDTH / 2);
+  barrels = [];
+  lastBarrel = 0;
+  lastBarrelSlot = 0;
+  barrelInterval = 1.5;
+
+  goLeft = false;
+  goRight = false;
+}
+
+function newBarrel() {
+  let slot = getRandomInteger(0, Barrel.SLOTS.length),
+      theBarrel;
+
+  while (slot === lastBarrelSlot) {
+    slot = getRandomInteger(0, Barrel.SLOTS.length);
+  }
+
+  theBarrel = new Barrel(slot);
+  barrels.push(theBarrel);
+  lastBarrel = 0;
+  lastBarrelSlot = slot;
+}
+
+function draw() {
+  if (gameStarted && (!gameOver)) {
+    screen.blit("background", [0, 0]);
+
+    fred.draw();
+    for (let barrel of barrels) {
+      barrel.draw();
+    }
+
+    screen.draw.filled_rect(new Rect(0, HEIGHT - 10, (WIDTH / 100) * fred.health, 10), [175, 59, 59]);
+  }
+
+  else if ((!gameStarted) && (!gameOver)) {
+    screen.blit("startgame", [0, 0]);
+  }
+
+  else if (gameStarted && gameOver) {
+    screen.blit("gameover", [0, 0]);
+    screen.draw.text(timeLasted.toFixed().padStart(2, '0'), {
+      topleft: [495, 430],
+      fontname: 'monospace',
+      fontsize: 50
+    });
+  }
+}
+
+function update(dt) {
+  if (gameStarted && (!gameOver)) {
+    timeLasted += dt;
+    lastBarrel += dt;
+
+    fred.update(dt);
+    for (let barrel of barrels) {
+      barrel.move();
+      barrel.update(dt);
+
+      if (!barrel.isBroken) {
+        if (barrel.checkForCollision(fred)) {
+          barrel.split();
+          fred.isHit = true;
+          fred.timeHit = 0;
+          if (fred.health >= 10) {
+            fred.health -= 10;
+          }
+          else {
+            gameOver = true;
+          }
+        }
+      }
+    }
+
+    barrels = barrels.filter(b => ((b.timeBroken <= 1) && (!b.needsRemoving)));
+
+    if (goLeft) {
+      fred.moveLeft(0);
+    }
+
+    if (goRight) {
+      fred.moveRight(WIDTH);
+    }
+
+    if ((lastBarrel > barrelInterval) && gameStarted) {
+      newBarrel();
+      if (barrelInterval > 0.150) {
+        barrelInterval -= 0.050;
+      }
+    }
+  }
+}
+
+function on_key_down(key) {
+  if (key === keys.LEFT) {
+    goLeft = true;
+    goRight = false;
+  }
+  else if (key === keys.RIGHT) {
+    goLeft = false;
+    goRight = true;
+  }
+  else if (key === keys.RETURN) {
+    if ((!gameStarted) && (!gameOver)) {
+      gameStarted = true;
+      timeLasted = 0;
+    }
+    else if (gameStarted && gameOver) {
+      fred = new Fred(WIDTH / 2);
+
+      barrels = [];
+      barrelInterval = 1.5;
+
+      timeLasted = 0;
+      gameOver = false;
+    }
+  }
+}
+
+function on_key_up(key) {
+  if (key === keys.LEFT) {
+    goLeft = false;
+  }
+  if (key === keys.RIGHT) {
+    goRight = false;
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
