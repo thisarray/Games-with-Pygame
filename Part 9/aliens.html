@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alien's Are Gonna Kill Me!</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/background.png" alt="background" data-name="background">
+  <img class="hidden" src="images/start_screen.png" alt="start_screen" data-name="start_screen">
+  <img class="hidden" src="images/them_pellet.png" alt="them_pellet" data-name="them_pellet">
+  <img class="hidden" src="images/them_ship.png" alt="them_ship" data-name="them_ship">
+  <img class="hidden" src="images/you_pellet.png" alt="you_pellet" data-name="you_pellet">
+  <img class="hidden" src="images/you_ship.png" alt="you_ship" data-name="you_ship">
+</section>
+<section id="soundLoader" class="hidden">
+  <audio class="hidden" controls preload="auto" src="sounds/enemy_laser.wav" data-name="enemy_laser">Your browser does not support the audio element.</audio>
+  <audio class="hidden" controls preload="auto" src="sounds/player_laser.wav" data-name="player_laser">Your browser does not support the audio element.</audio>
+</section>
+
+<main>
+<h1>Alien's Are Gonna Kill Me!</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://magpi.raspberrypi.com/books/essentials-games-vol1">Essentials - Make Games with Python, pages 114 - 129</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+import pygame, sys, random, math
+import pygame.locals as GAME_GLOBALS
+import pygame.event as GAME_EVENTS
+import pygame.time as GAME_TIME
+
+class Bullet():
+
+  x = 0
+  y = 0
+  image = None
+  pygame = None
+  surface = None
+  width = 0
+  height = 0
+  speed = 0.0
+
+  def loadImages(self):
+    self.image = self.pygame.image.load(self.image)
+
+  def draw(self):
+    self.surface.blit(self.image, (self.x, self.y))
+
+  def move(self):
+    self.y += self.speed
+
+  def __init__(self, x, y, pygame, surface, speed, image):
+    self.x = x
+    self.y = y
+    self.pygame = pygame
+    self.surface = surface
+    self.image = image
+    self.loadImages()
+    self.speed = speed
+
+    dimensions = self.image.get_rect().size
+    self.width = dimensions[0]
+    self.height = dimensions[1]
+
+    self.x -= self.width / 2
+
+class Player():
+
+  x = 0
+  y = 0
+  firing = False
+  image = None
+  soundEffect = &#x27;sounds/player_laser.wav&#x27;
+  pygame = None
+  surface = None
+  width = 0
+  height = 0
+  bullets = []
+  bulletImage = &quot;assets/you_pellet.png&quot;
+  bulletSpeed = -10
+  health = 5
+
+  def loadImages(self):
+    self.image = self.pygame.image.load(&quot;assets/you_ship.png&quot;)
+
+  def draw(self):
+    self.surface.blit(self.image, (self.x, self.y))
+
+  def setPosition(self, pos):
+    self.x = pos[0] - self.width / 2
+    # self.y = pos[1]
+
+  def fire(self):
+    self.bullets.append(Bullet(self.x + self.width / 2, self.y, self.pygame, self.surface, self.bulletSpeed, self.bulletImage))
+    a = self.pygame.mixer.Sound(self.soundEffect)
+    a.set_volume(0.2)
+    a.play()
+
+
+  def drawBullets(self):
+    for b in self.bullets:
+      b.move()
+      b.draw()
+
+  def registerHit(self):
+    self.health -= 1
+
+  def checkForHit(self, thingToCheckAgainst):
+    bulletsToRemove = []
+
+    for idx, b in enumerate(self.bullets):
+      if b.x &gt; thingToCheckAgainst.x and b.x &lt; thingToCheckAgainst.x + thingToCheckAgainst.width:
+        if b.y &gt; thingToCheckAgainst.y and b.y &lt; thingToCheckAgainst.y + thingToCheckAgainst.height:
+          thingToCheckAgainst.registerHit()
+          bulletsToRemove.append(idx)
+
+    for usedBullet in bulletsToRemove:
+      del self.bullets[usedBullet]
+
+    if thingToCheckAgainst.health &lt;= 0:
+      return True
+
+  def __init__(self, x, y, pygame, surface):
+    self.x = x
+    self.y = y
+    self.pygame = pygame
+    self.surface = surface
+    self.loadImages()
+
+    dimensions = self.image.get_rect().size
+    self.width = dimensions[0]
+    self.height = dimensions[1]
+
+    self.x -= self.width / 2
+    self.y -= self.height + 10
+
+class Enemy(Player):
+
+  x = 0
+  y = 0
+  firing = False
+  image = None
+  soundEffect = &#x27;sounds/enemy_laser.wav&#x27;
+  bulletImage = &quot;assets/them_pellet.png&quot;
+  bulletSpeed = 10
+  speed = 2
+
+  def move(self):
+    self.y += self.speed
+
+  def tryToFire(self):
+    shouldFire = random.random()
+
+    if shouldFire &lt;= 0.01:
+      self.fire()
+
+  def loadImages(self):
+    self.image = self.pygame.image.load(&quot;assets/them_ship.png&quot;)
+
+  def __init__(self, x, y, pygame, surface, health):
+    self.x = x
+    self.y = y
+    self.pygame = pygame
+    self.surface = surface
+    self.loadImages()
+    self.bullets = []
+    self.health = health
+
+    dimensions = self.image.get_rect().size
+    self.width = dimensions[0]
+    self.height = dimensions[1]
+
+    self.x -= self.width / 2
+
+windowWidth = 1024
+windowHeight = 614
+
+pygame.init()
+pygame.font.init()
+clock = pygame.time.Clock()
+surface = pygame.display.set_mode((windowWidth, windowHeight))
+
+pygame.display.set_caption(&#x27;Alien\&#x27;s Are Gonna Kill Me!&#x27;)
+textFont = pygame.font.SysFont(&quot;monospace&quot;, 50)
+
+gameStarted = False
+gameStartedTime = 0
+gameFinishedTime = 0
+gameOver = False
+
+#Mouse Variables
+mousePosition = (0,0)
+mouseStates = None
+mouseDown = False
+
+#Image Variables
+startScreen = pygame.image.load(&quot;assets/start_screen.png&quot;)
+background = pygame.image.load(&quot;assets/background.png&quot;)
+
+#Ships
+ship = Player(windowWidth / 2, windowHeight, pygame, surface)
+enemyShips = []
+
+lastEnemyCreated = 0
+enemyInterval = random.randint(1000, 2500)
+
+#Sound Setup
+pygame.mixer.init()
+
+def updateGame():
+
+  global mouseDown, gameOver
+
+  if mouseStates[0] is 1 and mouseDown is False:
+    ship.fire()
+    mouseDown = True
+  elif mouseStates[0] is 0 and mouseDown is True:
+    mouseDown = False
+
+  ship.setPosition(mousePosition)
+
+  enemiesToRemove = []
+
+  for idx, enemy in enumerate(enemyShips):
+
+    if enemy.y &lt; windowHeight:
+      enemy.move()
+      enemy.tryToFire()
+      shipIsDestroyed = enemy.checkForHit(ship)
+      enemyIsDestroyed = ship.checkForHit(enemy)
+
+      if enemyIsDestroyed is True:
+        enemiesToRemove.append(idx)
+
+      if shipIsDestroyed is True:
+        gameOver = True
+        quitGame()
+
+    else:
+      enemiesToRemove.append(idx)
+
+  for idx in enemiesToRemove:
+    del enemyShips[idx]
+
+def drawGame():
+    surface.blit(background, (0, 0))
+    ship.draw()
+    ship.drawBullets()
+
+    for enemy in enemyShips:
+      enemy.draw()
+      enemy.drawBullets()
+
+def quitGame():
+  pygame.quit()
+  sys.exit()
+
+# &#x27;main&#x27; loop
+while True:
+
+  timeTick = GAME_TIME.get_ticks()
+  mousePosition = pygame.mouse.get_pos()
+  mouseStates = pygame.mouse.get_pressed()
+
+  if gameStarted is True and gameOver is False:
+
+    updateGame()
+    drawGame()
+
+  elif gameStarted is False and gameOver is False:
+    surface.blit(startScreen, (0, 0))
+
+    if mouseStates[0] is 1:
+
+      if mousePosition[0] &gt; 445 and mousePosition[0] &lt; 580 and mousePosition[1] &gt; 450 and mousePosition[1] &lt; 510:
+
+        gameStarted = True
+
+    elif mouseStates[0] is 0 and mouseDown is True:
+      mouseDown = False
+
+  elif gameStarted is True and gameOver is True:
+    surface.blit(startScreen, (0, 0))
+    timeLasted = (gameFinishedTime - gameStartedTime) / 1000
+
+  # Handle user and system events
+  for event in GAME_EVENTS.get():
+
+    if event.type == pygame.KEYDOWN:
+
+      if event.key == pygame.K_ESCAPE:
+        quitGame()
+
+  if GAME_TIME.get_ticks() - lastEnemyCreated &gt; enemyInterval and gameStarted is True:
+    enemyShips.append(Enemy(random.randint(0, windowWidth), -60, pygame, surface, 1))
+    lastEnemyCreated = GAME_TIME.get_ticks()
+
+  if event.type == GAME_GLOBALS.QUIT:
+    quitGame()
+
+  clock.tick(60)
+  pygame.display.update()
+</code></pre>
+</main>
+
+<script>
+WIDTH = 1024;
+HEIGHT = 614;
+TITLE = "Alien's Are Gonna Kill Me!";
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+class Bullet {
+  constructor(x, y, speed, image) {
+    this.x = x;
+    this.y = y;
+    this.image = image;
+    this.speed = speed;
+
+    this.width = images[this.image].width;
+    this.height = images[this.image].height;
+
+    this.x -= this.width / 2;
+  }
+
+  draw() {
+    screen.blit(this.image, [this.x, this.y]);
+  }
+
+  move() {
+    this.y += this.speed;
+  }
+}
+
+class Player {
+  static IMAGE = "you_ship";
+  static SOUND_EFFECT = 'player_laser';
+  static BULLET_IMAGE = "you_pellet";
+  static BULLET_SPEED = -10;
+
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+
+    this.width = images[Player.IMAGE].width;
+    this.height = images[Player.IMAGE].height;
+
+    this.x -= this.width / 2;
+    this.y -= this.height + 10;
+
+    this.bullets = [];
+    this.health = 5;
+  }
+
+  draw() {
+    screen.blit(Player.IMAGE, [this.x, this.y]);
+  }
+
+  setPosition(pos) {
+    this.x = pos[0] - (this.width / 2);
+    // this.y = pos[1];
+  }
+
+  fire() {
+    this.bullets.push(new Bullet(this.x + (this.width / 2), this.y, Player.BULLET_SPEED, Player.BULLET_IMAGE));
+    sounds[Player.SOUND_EFFECT].volume = 0.2;
+    sounds[Player.SOUND_EFFECT].play();
+  }
+
+  drawBullets() {
+    for (let b of this.bullets) {
+      b.draw();
+    }
+  }
+
+  moveBullets() {
+    for (let b of this.bullets) {
+      b.move();
+    }
+  }
+
+  registerHit() {
+    this.health -= 1;
+  }
+
+  checkForHit(thingToCheckAgainst) {
+    let bulletsToRemove = [],
+        idx = 0;
+
+    for (let b of this.bullets) {
+      if ((b.x > thingToCheckAgainst.x) && (b.x < (thingToCheckAgainst.x + thingToCheckAgainst.width))) {
+        if ((b.y > thingToCheckAgainst.y) && (b.y < (thingToCheckAgainst.y + thingToCheckAgainst.height))) {
+          thingToCheckAgainst.registerHit();
+          bulletsToRemove.push(idx);
+        }
+      }
+      idx++;
+    }
+
+    for (let usedBullet of bulletsToRemove) {
+      this.bullets.splice(usedBullet, 1);
+    }
+
+    if (thingToCheckAgainst.health <= 0) {
+      return true;
+    }
+
+    return false;
+  }
+}
+
+class Enemy extends Player {
+  static IMAGE = "them_ship";
+  static SOUND_EFFECT = 'enemy_laser';
+  static BULLET_IMAGE = "them_pellet";
+  static BULLET_SPEED = 10;
+  static SPEED = 2;
+
+  constructor(x, y, health) {
+    super(x, y);
+
+    this.x = x;
+    this.y = y;
+    this.bullets = [];
+    this.health = health;
+
+    this.width = images[Enemy.IMAGE].width;
+    this.height = images[Enemy.IMAGE].height;
+
+    this.x -= this.width / 2;
+  }
+
+  draw() {
+    screen.blit(Enemy.IMAGE, [this.x, this.y]);
+  }
+
+  fire() {
+    this.bullets.push(new Bullet(this.x + (this.width / 2), this.y, Enemy.BULLET_SPEED, Enemy.BULLET_IMAGE));
+    sounds[Enemy.SOUND_EFFECT].volume = 0.2;
+    sounds[Enemy.SOUND_EFFECT].play();
+  }
+
+  move() {
+    this.y += Enemy.SPEED;
+  }
+
+  tryToFire() {
+    if (Math.random() <= 0.01) {
+      this.fire();
+    }
+  }
+}
+
+
+var gameStarted, gameTime, gameOver, ship, enemyShips, lastEnemyCreated, enemyInterval;
+
+function reset() {
+  gameStarted = false;
+  gameTime = 0;
+  gameOver = false;
+
+  //Ships
+  ship = new Player(WIDTH / 2, HEIGHT);
+  enemyShips = [];
+
+  lastEnemyCreated = 0;
+  // jsgame0 uses seconds instead of milliseconds
+  enemyInterval = getRandomInteger(1000, 2501) / 1000;
+}
+
+function update(dt) {
+  if (gameStarted && (!gameOver)) {
+    gameTime += dt;
+    lastEnemyCreated += dt;
+
+    ship.moveBullets();
+
+    let enemiesToRemove = [],
+        idx = 0,
+        shipIsDestroyed, enemyIsDestroyed;
+
+    for (let enemy of enemyShips) {
+      if (enemy.y < HEIGHT) {
+        enemy.move();
+        enemy.tryToFire();
+        shipIsDestroyed = enemy.checkForHit(ship);
+        enemyIsDestroyed = ship.checkForHit(enemy);
+
+        if (enemyIsDestroyed) {
+          enemiesToRemove.push(idx);
+        }
+
+        if (shipIsDestroyed) {
+          gameOver = true;
+        }
+      }
+      else {
+        enemiesToRemove.push(idx);
+      }
+
+      idx++;
+    }
+
+    for (let i of enemiesToRemove) {
+      enemyShips.splice(i, 1);
+    }
+
+    for (let enemy of enemyShips) {
+      enemy.moveBullets();
+    }
+  }
+
+  if ((lastEnemyCreated > enemyInterval) && gameStarted) {
+    enemyShips.push(new Enemy(getRandomInteger(0, WIDTH + 1), -60, 1));
+    lastEnemyCreated = 0;
+  }
+}
+
+function draw() {
+  if (gameStarted && (!gameOver)) {
+    screen.blit("background", [0, 0]);
+    ship.draw();
+    ship.drawBullets();
+
+    for (let enemy of enemyShips) {
+      enemy.draw();
+      enemy.drawBullets();
+    }
+  }
+
+  else if ((!gameStarted) && (!gameOver)) {
+    screen.blit("start_screen", [0, 0]);
+  }
+
+  else if (gameStarted && gameOver) {
+    screen.blit("start_screen", [0, 0]);
+  }
+}
+
+function on_mouse_down(pos) {
+  if (gameStarted && (!gameOver)) {
+    ship.fire();
+  }
+
+  else if ((!gameStarted) && (!gameOver)) {
+    if ((pos[0] > 445) && (pos[0] < 580) && (pos[1] > 450) && (pos[1] < 510)) {
+      gameStarted = true;
+    }
+  }
+}
+
+function on_mouse_move(pos) {
+  if (gameStarted && (!gameOver)) {
+    ship.setPosition(pos);
+  }
+}
+
+window.addEventListener('load', (event) => {
+  screen.init();
+});
+</script>
+</body>
+
+</html>
