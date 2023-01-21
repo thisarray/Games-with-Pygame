@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>See and Sound</title>
+  <title>Tilt and Sound</title>
   <script src="../../../jsgame0.js"></script>
   <style type="text/css" media="screen">
 body {
@@ -44,7 +44,7 @@ body {
 </section>
 
 <main>
-<h1>See and Sound</h1>
+<h1>Tilt and Sound</h1>
 
 <canvas id="screen">
 The game screen appears here if your browser supports the Canvas API.
@@ -54,7 +54,7 @@ The game screen appears here if your browser supports the Canvas API.
   <button type="button" id="pause">Pause</button>
 </section>
 
-<p>Click to spin the arrow and hear the animal it lands on.</p>
+<p>Tilt the arrow and hear the animal it lands on.</p>
 
 <h2>Attribution</h2>
 
@@ -66,14 +66,7 @@ The game screen appears here if your browser supports the Canvas API.
 WIDTH = 600;
 HEIGHT = 600;
 
-/*
- * Return a random number N such that min <= N < max.
- */
-function getRandom(min, max) {
-  return (Math.random() * (max - min)) + min;
-}
-
-let buttons, arrow, timer;
+let buttons, arrow, durations;
 
 function reset() {
   buttons = [];
@@ -91,18 +84,13 @@ function reset() {
   arrow = new Actor('arrow');
   arrow.pos = [Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2)];
 
-  timer = 0;
+  durations = new Array(buttons.length);
+  durations.fill(0);
 }
 
 function drawButtons() {
   for (let button of buttons) {
     screen.blit(button["image"], button["position"]);
-  }
-}
-
-function on_mouse_down(pos) {
-  if (timer <= 0) {
-    timer = getRandom(1, 3);
   }
 }
 
@@ -114,47 +102,129 @@ function draw() {
 }
 
 function update(dt) {
-  if (timer > 0) {
-    arrow.angle = (arrow.angle + 355) % 360;
+  let index = 1;
+  if (arrow.angle <= 30) {
+    index = 1;
+  }
+  else if (arrow.angle <= 60) {
+    index = 0;
+  }
+  else if (arrow.angle <= 120) {
+    index = 3;
+  }
+  else if (arrow.angle <= 150) {
+    index = 5;
+  }
+  else if (arrow.angle <= 210) {
+    index = 6;
+  }
+  else if (arrow.angle <= 240) {
+    index = 7;
+  }
+  else if (arrow.angle <= 300) {
+    index = 4;
+  }
+  else if (arrow.angle <= 330) {
+    index = 2;
+  }
+  else {
+    index = 1;
+  }
+  durations[index] += dt;
 
-    timer -= dt;
-    if (timer <= 0) {
-      let index = 1;
-      if (arrow.angle <= 30) {
-        index = 1;
+  if (durations.some(d => (d > 1))) {
+    for (let i = 0; i < buttons.length; i++) {
+      if (durations[i] > 1) {
+        sounds[buttons[i]['sound']].play();
+        break;
       }
-      else if (arrow.angle <= 60) {
-        index = 0;
-      }
-      else if (arrow.angle <= 120) {
-        index = 3;
-      }
-      else if (arrow.angle <= 150) {
-        index = 5;
-      }
-      else if (arrow.angle <= 210) {
-        index = 6;
-      }
-      else if (arrow.angle <= 240) {
-        index = 7;
-      }
-      else if (arrow.angle <= 300) {
-        index = 4;
-      }
-      else if (arrow.angle <= 330) {
-        index = 2;
-      }
-      else {
-        index = 1;
-      }
-      sounds[buttons[index]['sound']].play();
+    }
+    // Reset the duration counts
+    durations.fill(0);
+  }
+}
+
+function on_key_down(key, mask, string) {
+  if ((key === keys.UP) || (key === keys.KP8)) {
+    arrow.angle = 0;
+  }
+  else if ((key === keys.RIGHT) || (key === keys.KP6)) {
+    arrow.angle = 270;
+  }
+  else if ((key === keys.DOWN) || (key === keys.KP2)) {
+    arrow.angle = 180;
+  }
+  else if ((key === keys.LEFT) || (key === keys.KP4)) {
+    arrow.angle = 90;
+  }
+  else if (key === keys.KP1) {
+    arrow.angle = 135;
+  }
+  else if (key === keys.KP3) {
+    arrow.angle = 225;
+  }
+  else if (key === keys.KP7) {
+    arrow.angle = 45;
+  }
+  else if (key === keys.KP9) {
+    arrow.angle = 315;
+  }
+}
+
+/*
+ * Set arrow.angle based on how far the device is tilted about the x-axis and the y-axis.
+ */
+function setAngleFromTilt(tiltAboutX, tiltAboutY) {
+  let absTiltAboutX = Math.abs(tiltAboutX),
+      absTiltAboutY = Math.abs(tiltAboutY),
+      denominator = absTiltAboutX + absTiltAboutY,
+      angle = 0;
+
+  if (absTiltAboutX < 1) {
+    // If not tilted about the x-axis far enough to register,
+    // then only consider tilt about the y-axis
+    if (tiltAboutY < 0) {
+      angle = 270;
+    }
+    else if (tiltAboutY > 0) {
+      angle = 90;
+    }
+    // If not tilted about the y-axis far enough, then leave the angle at 0
+  }
+  else if (tiltAboutX < 0) {
+    if (tiltAboutY <= 0) {
+      angle = (absTiltAboutX * 360) + (absTiltAboutY * 270);
+      angle /= denominator;
+      angle %= 360;
+    }
+    else {
+      angle = (absTiltAboutX * 0) + (absTiltAboutY * 90);
+      angle /= denominator;
     }
   }
+  else {
+    if (tiltAboutY <= 0) {
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 270);
+      angle /= denominator;
+    }
+    else {
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 90);
+      angle /= denominator;
+    }
+  }
+
+  arrow.angle = angle;
 }
 
 window.addEventListener('load', (event) => {
   screen.init();
 });
+
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', (event) => {
+    setAngleFromTilt(Math.min(Math.max(-90, event.beta), 90), event.gamma);
+  });
+}
 </script>
 </body>
 
