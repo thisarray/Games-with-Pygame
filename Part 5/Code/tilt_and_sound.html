@@ -173,6 +173,8 @@ function on_key_down(key, mask, string) {
 
 /*
  * Set arrow.angle based on how far the device is tilted about the x-axis and the y-axis.
+ *
+ * Actor objects rotate anticlockwise so negative tilt about Y corresponds to an angle of 90 degrees.
  */
 function setAngleFromTilt(tiltAboutX, tiltAboutY) {
   let absTiltAboutX = Math.abs(tiltAboutX),
@@ -184,31 +186,31 @@ function setAngleFromTilt(tiltAboutX, tiltAboutY) {
     // If not tilted about the x-axis far enough to register,
     // then only consider tilt about the y-axis
     if (tiltAboutY < 0) {
-      angle = 270;
+      angle = 90;
     }
     else if (tiltAboutY > 0) {
-      angle = 90;
+      angle = 270;
     }
     // If not tilted about the y-axis far enough, then leave the angle at 0
   }
   else if (tiltAboutX < 0) {
     if (tiltAboutY <= 0) {
-      angle = (absTiltAboutX * 360) + (absTiltAboutY * 270);
+      angle = (absTiltAboutX * 360) + (absTiltAboutY * 90);
       angle /= denominator;
       angle %= 360;
     }
     else {
-      angle = (absTiltAboutX * 0) + (absTiltAboutY * 90);
+      angle = (absTiltAboutX * 0) + (absTiltAboutY * 270);
       angle /= denominator;
     }
   }
   else {
     if (tiltAboutY <= 0) {
-      angle = (absTiltAboutX * 180) + (absTiltAboutY * 270);
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 90);
       angle /= denominator;
     }
     else {
-      angle = (absTiltAboutX * 180) + (absTiltAboutY * 90);
+      angle = (absTiltAboutX * 180) + (absTiltAboutY * 270);
       angle /= denominator;
     }
   }
