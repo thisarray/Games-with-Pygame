@@ -227,7 +227,7 @@ function on_mouse_up(pos) {
     stopActor.topleft = stopButton['position'];
 
     if (buttonActor.collidepoint(pos)) {
-      sounds[button['sound']].volume = volume;
+      sounds[button['sound']].set_volume(volume);
       sounds[button['sound']].play();
     }
 

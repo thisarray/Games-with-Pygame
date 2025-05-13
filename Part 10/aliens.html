@@ -889,7 +889,7 @@ class Player {
 
   fire() {
     this.bullets.push(new Bullet(this.x + (this.width / 2), this.y, Player.BULLET_SPEED, Player.BULLET_IMAGE));
-    sounds[Player.SOUND_EFFECT].volume = 0.2;
+    sounds[Player.SOUND_EFFECT].set_volume(0.2);
     sounds[Player.SOUND_EFFECT].play();
   }
 
@@ -971,7 +971,7 @@ class Enemy extends Player {
 
   fire() {
     this.bullets.push(new Bullet(this.x + (this.width / 2), this.y, Enemy.BULLET_SPEED, Enemy.BULLET_IMAGE));
-    sounds[Enemy.SOUND_EFFECT].volume = 0.2;
+    sounds[Enemy.SOUND_EFFECT].set_volume(0.2);
     sounds[Enemy.SOUND_EFFECT].play();
   }
 
